@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="default_web_client_id" translatable="false">424570474094-66fio54fct71j2ufjl0pqnfdqdp64i60.apps.googleusercontent.com</string>
+    <string name="gcm_defaultSenderId" translatable="false">424570474094</string>
+    <string name="google_api_key" translatable="false">AIzaSyD3DGNk1HGmgm6tfmCVZR_rl0PrpcmEM24</string>
+    <string name="google_app_id" translatable="false">1:424570474094:android:e1bbd03b83531dff62607f</string>
+    <string name="google_crash_reporting_api_key" translatable="false">AIzaSyD3DGNk1HGmgm6tfmCVZR_rl0PrpcmEM24</string>
+    <string name="google_storage_bucket" translatable="false">izza-films.appspot.com</string>
+    <string name="project_id" translatable="false">izza-films</string>
+</resources>

@@ -1,0 +1,316 @@
+1<?xml version="1.0" encoding="utf-8"?>
+2<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+3    package="com.example.photoUploader"
+4    android:versionCode="1"
+5    android:versionName="1.0" >
+6
+7    <uses-sdk
+8        android:minSdkVersion="23"
+9        android:targetSdkVersion="33" />
+10    <!--
+11         The INTERNET permission is required for development. Specifically,
+12         the Flutter tool needs it to communicate with the running application
+13         to allow setting breakpoints, to provide hot reload, etc.
+14    -->
+15    <uses-permission android:name="android.permission.INTERNET" />
+15-->E:\Code\Flutter\photo_uploader\photo_uploader\android\app\src\main\AndroidManifest.xml:2:2-64
+15-->E:\Code\Flutter\photo_uploader\photo_uploader\android\app\src\main\AndroidManifest.xml:2:19-61
+16    <uses-permission android:name="android.permission.WAKE_LOCK" />
+16-->E:\Code\Flutter\photo_uploader\photo_uploader\android\app\src\main\AndroidManifest.xml:3:2-65
+16-->E:\Code\Flutter\photo_uploader\photo_uploader\android\app\src\main\AndroidManifest.xml:3:19-62
+17    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+17-->E:\Code\Flutter\photo_uploader\photo_uploader\android\app\src\main\AndroidManifest.xml:4:2-78
+17-->E:\Code\Flutter\photo_uploader\photo_uploader\android\app\src\main\AndroidManifest.xml:4:19-75
+18    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+18-->E:\Code\Flutter\photo_uploader\photo_uploader\android\app\src\main\AndroidManifest.xml:5:2-77
+18-->E:\Code\Flutter\photo_uploader\photo_uploader\android\app\src\main\AndroidManifest.xml:5:19-74
+19    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
+19-->E:\Code\Flutter\photo_uploader\photo_uploader\android\app\src\main\AndroidManifest.xml:6:2-92
+19-->E:\Code\Flutter\photo_uploader\photo_uploader\android\app\src\main\AndroidManifest.xml:6:19-89
+20    <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE" />
+20-->E:\Code\Flutter\photo_uploader\photo_uploader\android\app\src\main\AndroidManifest.xml:7:2-79
+20-->E:\Code\Flutter\photo_uploader\photo_uploader\android\app\src\main\AndroidManifest.xml:7:19-76
+21    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+21-->E:\Code\Flutter\photo_uploader\photo_uploader\android\app\src\main\AndroidManifest.xml:8:2-75
+21-->E:\Code\Flutter\photo_uploader\photo_uploader\android\app\src\main\AndroidManifest.xml:8:19-72
+22    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+22-->E:\Code\Flutter\photo_uploader\photo_uploader\android\app\src\main\AndroidManifest.xml:9:2-74
+22-->E:\Code\Flutter\photo_uploader\photo_uploader\android\app\src\main\AndroidManifest.xml:9:19-71
+23    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+23-->E:\Code\Flutter\photo_uploader\photo_uploader\android\app\src\main\AndroidManifest.xml:10:2-78
+23-->E:\Code\Flutter\photo_uploader\photo_uploader\android\app\src\main\AndroidManifest.xml:10:19-75
+24    <!--
+25	Required to query activities that can process text, see:
+26	https://developer.android.com/training/package-visibility and
+27	https://developer.android.com/reference/android/content/Intent#ACTION_PROCESS_TEXT.
+28	
+29	In particular, this is used by the Flutter engine in io.flutter.plugin.text.ProcessTextPlugin.
+30    -->
+31    <queries>
+31-->E:\Code\Flutter\photo_uploader\photo_uploader\android\app\src\main\AndroidManifest.xml:41:2-46:12
+32        <intent>
+32-->E:\Code\Flutter\photo_uploader\photo_uploader\android\app\src\main\AndroidManifest.xml:42:3-45:12
+33            <action android:name="android.intent.action.PROCESS_TEXT" />
+33-->E:\Code\Flutter\photo_uploader\photo_uploader\android\app\src\main\AndroidManifest.xml:43:4-64
+33-->E:\Code\Flutter\photo_uploader\photo_uploader\android\app\src\main\AndroidManifest.xml:43:12-61
+34
+35            <data android:mimeType="text/plain" />
+35-->E:\Code\Flutter\photo_uploader\photo_uploader\android\app\src\main\AndroidManifest.xml:44:4-42
+35-->E:\Code\Flutter\photo_uploader\photo_uploader\android\app\src\main\AndroidManifest.xml:44:10-39
+36        </intent>
+37    </queries>
+38
+39    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+39-->[com.google.android.gms:play-services-measurement:21.0.0] C:\Users\Farzan\.gradle\caches\transforms-3\b10103a5d235bf028e1e294f2e03bf92\transformed\jetified-play-services-measurement-21.0.0\AndroidManifest.xml:24:5-79
+39-->[com.google.android.gms:play-services-measurement:21.0.0] C:\Users\Farzan\.gradle\caches\transforms-3\b10103a5d235bf028e1e294f2e03bf92\transformed\jetified-play-services-measurement-21.0.0\AndroidManifest.xml:24:22-76
+40    <uses-permission android:name="com.google.android.finsky.permission.BIND_GET_INSTALL_REFERRER_SERVICE" />
+40-->[com.google.android.gms:play-services-measurement:21.0.0] C:\Users\Farzan\.gradle\caches\transforms-3\b10103a5d235bf028e1e294f2e03bf92\transformed\jetified-play-services-measurement-21.0.0\AndroidManifest.xml:26:5-110
+40-->[com.google.android.gms:play-services-measurement:21.0.0] C:\Users\Farzan\.gradle\caches\transforms-3\b10103a5d235bf028e1e294f2e03bf92\transformed\jetified-play-services-measurement-21.0.0\AndroidManifest.xml:26:22-107
+41    <uses-permission android:name="com.google.android.gms.permission.AD_ID" />
+41-->[com.google.android.gms:play-services-measurement-api:21.0.0] C:\Users\Farzan\.gradle\caches\transforms-3\ac5d4b98471ff040091d9cc8c2d4ab9d\transformed\jetified-play-services-measurement-api-21.0.0\AndroidManifest.xml:25:5-79
+41-->[com.google.android.gms:play-services-measurement-api:21.0.0] C:\Users\Farzan\.gradle\caches\transforms-3\ac5d4b98471ff040091d9cc8c2d4ab9d\transformed\jetified-play-services-measurement-api-21.0.0\AndroidManifest.xml:25:22-76
+42
+43    <permission
+43-->[androidx.core:core:1.9.0] C:\Users\Farzan\.gradle\caches\transforms-3\1fc878f469c91f37dfa4cc3d96284815\transformed\core-1.9.0\AndroidManifest.xml:22:5-24:47
+44        android:name="com.example.photoUploader.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
+44-->[androidx.core:core:1.9.0] C:\Users\Farzan\.gradle\caches\transforms-3\1fc878f469c91f37dfa4cc3d96284815\transformed\core-1.9.0\AndroidManifest.xml:23:9-81
+45        android:protectionLevel="signature" />
+45-->[androidx.core:core:1.9.0] C:\Users\Farzan\.gradle\caches\transforms-3\1fc878f469c91f37dfa4cc3d96284815\transformed\core-1.9.0\AndroidManifest.xml:24:9-44
+46
+47    <uses-permission android:name="com.example.photoUploader.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION" />
+47-->[androidx.core:core:1.9.0] C:\Users\Farzan\.gradle\caches\transforms-3\1fc878f469c91f37dfa4cc3d96284815\transformed\core-1.9.0\AndroidManifest.xml:26:5-97
+47-->[androidx.core:core:1.9.0] C:\Users\Farzan\.gradle\caches\transforms-3\1fc878f469c91f37dfa4cc3d96284815\transformed\core-1.9.0\AndroidManifest.xml:26:22-94
+48
+49    <application
+49-->E:\Code\Flutter\photo_uploader\photo_uploader\android\app\src\main\AndroidManifest.xml:11:2-33:16
+50        android:name="com.example.photoUploader.PhotoUploader"
+50-->E:\Code\Flutter\photo_uploader\photo_uploader\android\app\src\main\AndroidManifest.xml:11:46-74
+51        android:appComponentFactory="androidx.core.app.CoreComponentFactory"
+51-->[androidx.core:core:1.9.0] C:\Users\Farzan\.gradle\caches\transforms-3\1fc878f469c91f37dfa4cc3d96284815\transformed\core-1.9.0\AndroidManifest.xml:28:18-86
+52        android:debuggable="true"
+53        android:extractNativeLibs="false"
+54        android:icon="@mipmap/ic_launcher"
+54-->E:\Code\Flutter\photo_uploader\photo_uploader\android\app\src\main\AndroidManifest.xml:11:119-153
+55        android:label="photo_uploader"
+55-->E:\Code\Flutter\photo_uploader\photo_uploader\android\app\src\main\AndroidManifest.xml:11:15-45
+56        android:requestLegacyExternalStorage="true" >
+56-->E:\Code\Flutter\photo_uploader\photo_uploader\android\app\src\main\AndroidManifest.xml:11:75-118
+57        <service
+57-->E:\Code\Flutter\photo_uploader\photo_uploader\android\app\src\main\AndroidManifest.xml:12:3-115
+58            android:name="flutter.overlay.window.flutter_overlay_window.OverlayService"
+58-->E:\Code\Flutter\photo_uploader\photo_uploader\android\app\src\main\AndroidManifest.xml:12:12-87
+59            android:exported="false" />
+59-->E:\Code\Flutter\photo_uploader\photo_uploader\android\app\src\main\AndroidManifest.xml:12:88-112
+60
+61        <activity
+61-->E:\Code\Flutter\photo_uploader\photo_uploader\android\app\src\main\AndroidManifest.xml:13:3-26:14
+62            android:name="com.example.photoUploader.MainActivity"
+62-->E:\Code\Flutter\photo_uploader\photo_uploader\android\app\src\main\AndroidManifest.xml:13:71-99
+63            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
+63-->E:\Code\Flutter\photo_uploader\photo_uploader\android\app\src\main\AndroidManifest.xml:13:214-364
+64            android:exported="true"
+64-->E:\Code\Flutter\photo_uploader\photo_uploader\android\app\src\main\AndroidManifest.xml:13:100-123
+65            android:hardwareAccelerated="true"
+65-->E:\Code\Flutter\photo_uploader\photo_uploader\android\app\src\main\AndroidManifest.xml:13:365-399
+66            android:launchMode="singleTop"
+66-->E:\Code\Flutter\photo_uploader\photo_uploader\android\app\src\main\AndroidManifest.xml:13:124-154
+67            android:showWhenLocked="true"
+67-->E:\Code\Flutter\photo_uploader\photo_uploader\android\app\src\main\AndroidManifest.xml:13:13-42
+68            android:taskAffinity=""
+68-->E:\Code\Flutter\photo_uploader\photo_uploader\android\app\src\main\AndroidManifest.xml:13:155-178
+69            android:theme="@style/LaunchTheme"
+69-->E:\Code\Flutter\photo_uploader\photo_uploader\android\app\src\main\AndroidManifest.xml:13:179-213
+70            android:turnScreenOn="true"
+70-->E:\Code\Flutter\photo_uploader\photo_uploader\android\app\src\main\AndroidManifest.xml:13:43-70
+71            android:windowSoftInputMode="adjustResize" >
+71-->E:\Code\Flutter\photo_uploader\photo_uploader\android\app\src\main\AndroidManifest.xml:13:400-442
+72
+73            <!--
+74			Specifies an Android theme to apply to this Activity as soon as
+75			the Android process has started. This theme is visible to the user
+76			while the Flutter UI initializes. After that, this theme continues
+77			to determine the Window background behind the Flutter UI.
+78            -->
+79            <meta-data
+79-->E:\Code\Flutter\photo_uploader\photo_uploader\android\app\src\main\AndroidManifest.xml:20:4-111
+80                android:name="io.flutter.embedding.android.NormalTheme"
+80-->E:\Code\Flutter\photo_uploader\photo_uploader\android\app\src\main\AndroidManifest.xml:20:15-70
+81                android:resource="@style/NormalTheme" />
+81-->E:\Code\Flutter\photo_uploader\photo_uploader\android\app\src\main\AndroidManifest.xml:20:71-108
+82            <meta-data
+82-->E:\Code\Flutter\photo_uploader\photo_uploader\android\app\src\main\AndroidManifest.xml:21:4-67
+83                android:name="flutterEmbedding"
+83-->E:\Code\Flutter\photo_uploader\photo_uploader\android\app\src\main\AndroidManifest.xml:21:15-46
+84                android:value="2" />
+84-->E:\Code\Flutter\photo_uploader\photo_uploader\android\app\src\main\AndroidManifest.xml:21:47-64
+85
+86            <intent-filter>
+86-->E:\Code\Flutter\photo_uploader\photo_uploader\android\app\src\main\AndroidManifest.xml:22:4-25:20
+87                <action android:name="android.intent.action.MAIN" />
+87-->E:\Code\Flutter\photo_uploader\photo_uploader\android\app\src\main\AndroidManifest.xml:23:5-57
+87-->E:\Code\Flutter\photo_uploader\photo_uploader\android\app\src\main\AndroidManifest.xml:23:13-54
+88
+89                <category android:name="android.intent.category.LAUNCHER" />
+89-->E:\Code\Flutter\photo_uploader\photo_uploader\android\app\src\main\AndroidManifest.xml:24:5-65
+89-->E:\Code\Flutter\photo_uploader\photo_uploader\android\app\src\main\AndroidManifest.xml:24:15-62
+90            </intent-filter>
+91        </activity>
+92        <!--
+93		Don't delete the meta-data below.
+94		This is used by the Flutter tool to generate GeneratedPluginRegistrant.java
+95        -->
+96        <meta-data
+96-->E:\Code\Flutter\photo_uploader\photo_uploader\android\app\src\main\AndroidManifest.xml:21:4-67
+97            android:name="flutterEmbedding"
+97-->E:\Code\Flutter\photo_uploader\photo_uploader\android\app\src\main\AndroidManifest.xml:21:15-46
+98            android:value="2" />
+98-->E:\Code\Flutter\photo_uploader\photo_uploader\android\app\src\main\AndroidManifest.xml:21:47-64
+99
+100        <service
+100-->E:\Code\Flutter\photo_uploader\photo_uploader\android\app\src\main\AndroidManifest.xml:32:3-119
+101            android:name="com.example.folder_monitor_app.BackgroundService"
+101-->E:\Code\Flutter\photo_uploader\photo_uploader\android\app\src\main\AndroidManifest.xml:32:12-75
+102            android:foregroundServiceType="location" />
+102-->E:\Code\Flutter\photo_uploader\photo_uploader\android\app\src\main\AndroidManifest.xml:32:76-116
+103
+104        <activity
+104-->[com.google.android.gms:play-services-auth:20.2.0] C:\Users\Farzan\.gradle\caches\transforms-3\181b3532e388e2efe55953494b14a1df\transformed\jetified-play-services-auth-20.2.0\AndroidManifest.xml:23:9-27:75
+105            android:name="com.google.android.gms.auth.api.signin.internal.SignInHubActivity"
+105-->[com.google.android.gms:play-services-auth:20.2.0] C:\Users\Farzan\.gradle\caches\transforms-3\181b3532e388e2efe55953494b14a1df\transformed\jetified-play-services-auth-20.2.0\AndroidManifest.xml:24:13-93
+106            android:excludeFromRecents="true"
+106-->[com.google.android.gms:play-services-auth:20.2.0] C:\Users\Farzan\.gradle\caches\transforms-3\181b3532e388e2efe55953494b14a1df\transformed\jetified-play-services-auth-20.2.0\AndroidManifest.xml:25:13-46
+107            android:exported="false"
+107-->[com.google.android.gms:play-services-auth:20.2.0] C:\Users\Farzan\.gradle\caches\transforms-3\181b3532e388e2efe55953494b14a1df\transformed\jetified-play-services-auth-20.2.0\AndroidManifest.xml:26:13-37
+108            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+108-->[com.google.android.gms:play-services-auth:20.2.0] C:\Users\Farzan\.gradle\caches\transforms-3\181b3532e388e2efe55953494b14a1df\transformed\jetified-play-services-auth-20.2.0\AndroidManifest.xml:27:13-72
+109        <!--
+110            Service handling Google Sign-In user revocation. For apps that do not integrate with
+111            Google Sign-In, this service will never be started.
+112        -->
+113        <service
+113-->[com.google.android.gms:play-services-auth:20.2.0] C:\Users\Farzan\.gradle\caches\transforms-3\181b3532e388e2efe55953494b14a1df\transformed\jetified-play-services-auth-20.2.0\AndroidManifest.xml:33:9-37:51
+114            android:name="com.google.android.gms.auth.api.signin.RevocationBoundService"
+114-->[com.google.android.gms:play-services-auth:20.2.0] C:\Users\Farzan\.gradle\caches\transforms-3\181b3532e388e2efe55953494b14a1df\transformed\jetified-play-services-auth-20.2.0\AndroidManifest.xml:34:13-89
+115            android:exported="true"
+115-->[com.google.android.gms:play-services-auth:20.2.0] C:\Users\Farzan\.gradle\caches\transforms-3\181b3532e388e2efe55953494b14a1df\transformed\jetified-play-services-auth-20.2.0\AndroidManifest.xml:35:13-36
+116            android:permission="com.google.android.gms.auth.api.signin.permission.REVOCATION_NOTIFICATION"
+116-->[com.google.android.gms:play-services-auth:20.2.0] C:\Users\Farzan\.gradle\caches\transforms-3\181b3532e388e2efe55953494b14a1df\transformed\jetified-play-services-auth-20.2.0\AndroidManifest.xml:36:13-107
+117            android:visibleToInstantApps="true" />
+117-->[com.google.android.gms:play-services-auth:20.2.0] C:\Users\Farzan\.gradle\caches\transforms-3\181b3532e388e2efe55953494b14a1df\transformed\jetified-play-services-auth-20.2.0\AndroidManifest.xml:37:13-48
+118
+119        <activity
+119-->[com.google.android.gms:play-services-base:18.1.0] C:\Users\Farzan\.gradle\caches\transforms-3\83ff7831b1e7b9c9c9b9f13064d2e598\transformed\jetified-play-services-base-18.1.0\AndroidManifest.xml:20:9-22:45
+120            android:name="com.google.android.gms.common.api.GoogleApiActivity"
+120-->[com.google.android.gms:play-services-base:18.1.0] C:\Users\Farzan\.gradle\caches\transforms-3\83ff7831b1e7b9c9c9b9f13064d2e598\transformed\jetified-play-services-base-18.1.0\AndroidManifest.xml:20:19-85
+121            android:exported="false"
+121-->[com.google.android.gms:play-services-base:18.1.0] C:\Users\Farzan\.gradle\caches\transforms-3\83ff7831b1e7b9c9c9b9f13064d2e598\transformed\jetified-play-services-base-18.1.0\AndroidManifest.xml:22:19-43
+122            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+122-->[com.google.android.gms:play-services-base:18.1.0] C:\Users\Farzan\.gradle\caches\transforms-3\83ff7831b1e7b9c9c9b9f13064d2e598\transformed\jetified-play-services-base-18.1.0\AndroidManifest.xml:21:19-78
+123
+124        <uses-library
+124-->[androidx.window:window:1.0.0] C:\Users\Farzan\.gradle\caches\transforms-3\e038eed1ca7c679a3ca756bbd4c1f5b8\transformed\jetified-window-1.0.0\AndroidManifest.xml:25:9-27:40
+125            android:name="androidx.window.extensions"
+125-->[androidx.window:window:1.0.0] C:\Users\Farzan\.gradle\caches\transforms-3\e038eed1ca7c679a3ca756bbd4c1f5b8\transformed\jetified-window-1.0.0\AndroidManifest.xml:26:13-54
+126            android:required="false" />
+126-->[androidx.window:window:1.0.0] C:\Users\Farzan\.gradle\caches\transforms-3\e038eed1ca7c679a3ca756bbd4c1f5b8\transformed\jetified-window-1.0.0\AndroidManifest.xml:27:13-37
+127        <uses-library
+127-->[androidx.window:window:1.0.0] C:\Users\Farzan\.gradle\caches\transforms-3\e038eed1ca7c679a3ca756bbd4c1f5b8\transformed\jetified-window-1.0.0\AndroidManifest.xml:28:9-30:40
+128            android:name="androidx.window.sidecar"
+128-->[androidx.window:window:1.0.0] C:\Users\Farzan\.gradle\caches\transforms-3\e038eed1ca7c679a3ca756bbd4c1f5b8\transformed\jetified-window-1.0.0\AndroidManifest.xml:29:13-51
+129            android:required="false" />
+129-->[androidx.window:window:1.0.0] C:\Users\Farzan\.gradle\caches\transforms-3\e038eed1ca7c679a3ca756bbd4c1f5b8\transformed\jetified-window-1.0.0\AndroidManifest.xml:30:13-37
+130
+131        <receiver
+131-->[com.google.android.gms:play-services-measurement:21.0.0] C:\Users\Farzan\.gradle\caches\transforms-3\b10103a5d235bf028e1e294f2e03bf92\transformed\jetified-play-services-measurement-21.0.0\AndroidManifest.xml:29:9-33:20
+132            android:name="com.google.android.gms.measurement.AppMeasurementReceiver"
+132-->[com.google.android.gms:play-services-measurement:21.0.0] C:\Users\Farzan\.gradle\caches\transforms-3\b10103a5d235bf028e1e294f2e03bf92\transformed\jetified-play-services-measurement-21.0.0\AndroidManifest.xml:30:13-85
+133            android:enabled="true"
+133-->[com.google.android.gms:play-services-measurement:21.0.0] C:\Users\Farzan\.gradle\caches\transforms-3\b10103a5d235bf028e1e294f2e03bf92\transformed\jetified-play-services-measurement-21.0.0\AndroidManifest.xml:31:13-35
+134            android:exported="false" >
+134-->[com.google.android.gms:play-services-measurement:21.0.0] C:\Users\Farzan\.gradle\caches\transforms-3\b10103a5d235bf028e1e294f2e03bf92\transformed\jetified-play-services-measurement-21.0.0\AndroidManifest.xml:32:13-37
+135        </receiver>
+136
+137        <service
+137-->[com.google.android.gms:play-services-measurement:21.0.0] C:\Users\Farzan\.gradle\caches\transforms-3\b10103a5d235bf028e1e294f2e03bf92\transformed\jetified-play-services-measurement-21.0.0\AndroidManifest.xml:35:9-38:40
+138            android:name="com.google.android.gms.measurement.AppMeasurementService"
+138-->[com.google.android.gms:play-services-measurement:21.0.0] C:\Users\Farzan\.gradle\caches\transforms-3\b10103a5d235bf028e1e294f2e03bf92\transformed\jetified-play-services-measurement-21.0.0\AndroidManifest.xml:36:13-84
+139            android:enabled="true"
+139-->[com.google.android.gms:play-services-measurement:21.0.0] C:\Users\Farzan\.gradle\caches\transforms-3\b10103a5d235bf028e1e294f2e03bf92\transformed\jetified-play-services-measurement-21.0.0\AndroidManifest.xml:37:13-35
+140            android:exported="false" />
+140-->[com.google.android.gms:play-services-measurement:21.0.0] C:\Users\Farzan\.gradle\caches\transforms-3\b10103a5d235bf028e1e294f2e03bf92\transformed\jetified-play-services-measurement-21.0.0\AndroidManifest.xml:38:13-37
+141        <service
+141-->[com.google.android.gms:play-services-measurement:21.0.0] C:\Users\Farzan\.gradle\caches\transforms-3\b10103a5d235bf028e1e294f2e03bf92\transformed\jetified-play-services-measurement-21.0.0\AndroidManifest.xml:39:9-43:72
+142            android:name="com.google.android.gms.measurement.AppMeasurementJobService"
+142-->[com.google.android.gms:play-services-measurement:21.0.0] C:\Users\Farzan\.gradle\caches\transforms-3\b10103a5d235bf028e1e294f2e03bf92\transformed\jetified-play-services-measurement-21.0.0\AndroidManifest.xml:40:13-87
+143            android:enabled="true"
+143-->[com.google.android.gms:play-services-measurement:21.0.0] C:\Users\Farzan\.gradle\caches\transforms-3\b10103a5d235bf028e1e294f2e03bf92\transformed\jetified-play-services-measurement-21.0.0\AndroidManifest.xml:41:13-35
+144            android:exported="false"
+144-->[com.google.android.gms:play-services-measurement:21.0.0] C:\Users\Farzan\.gradle\caches\transforms-3\b10103a5d235bf028e1e294f2e03bf92\transformed\jetified-play-services-measurement-21.0.0\AndroidManifest.xml:42:13-37
+145            android:permission="android.permission.BIND_JOB_SERVICE" />
+145-->[com.google.android.gms:play-services-measurement:21.0.0] C:\Users\Farzan\.gradle\caches\transforms-3\b10103a5d235bf028e1e294f2e03bf92\transformed\jetified-play-services-measurement-21.0.0\AndroidManifest.xml:43:13-69
+146        <service
+146-->[com.google.android.gms:play-services-measurement-api:21.0.0] C:\Users\Farzan\.gradle\caches\transforms-3\ac5d4b98471ff040091d9cc8c2d4ab9d\transformed\jetified-play-services-measurement-api-21.0.0\AndroidManifest.xml:28:9-34:19
+147            android:name="com.google.firebase.components.ComponentDiscoveryService"
+147-->[com.google.android.gms:play-services-measurement-api:21.0.0] C:\Users\Farzan\.gradle\caches\transforms-3\ac5d4b98471ff040091d9cc8c2d4ab9d\transformed\jetified-play-services-measurement-api-21.0.0\AndroidManifest.xml:29:13-84
+148            android:directBootAware="true"
+148-->[com.google.firebase:firebase-common:20.1.0] C:\Users\Farzan\.gradle\caches\transforms-3\09679aaf74f5741904a8d682073e12ac\transformed\jetified-firebase-common-20.1.0\AndroidManifest.xml:35:13-43
+149            android:exported="false" >
+149-->[com.google.android.gms:play-services-measurement-api:21.0.0] C:\Users\Farzan\.gradle\caches\transforms-3\ac5d4b98471ff040091d9cc8c2d4ab9d\transformed\jetified-play-services-measurement-api-21.0.0\AndroidManifest.xml:30:13-37
+150            <meta-data
+150-->[com.google.android.gms:play-services-measurement-api:21.0.0] C:\Users\Farzan\.gradle\caches\transforms-3\ac5d4b98471ff040091d9cc8c2d4ab9d\transformed\jetified-play-services-measurement-api-21.0.0\AndroidManifest.xml:31:13-33:85
+151                android:name="com.google.firebase.components:com.google.firebase.analytics.connector.internal.AnalyticsConnectorRegistrar"
+151-->[com.google.android.gms:play-services-measurement-api:21.0.0] C:\Users\Farzan\.gradle\caches\transforms-3\ac5d4b98471ff040091d9cc8c2d4ab9d\transformed\jetified-play-services-measurement-api-21.0.0\AndroidManifest.xml:32:17-139
+152                android:value="com.google.firebase.components.ComponentRegistrar" />
+152-->[com.google.android.gms:play-services-measurement-api:21.0.0] C:\Users\Farzan\.gradle\caches\transforms-3\ac5d4b98471ff040091d9cc8c2d4ab9d\transformed\jetified-play-services-measurement-api-21.0.0\AndroidManifest.xml:33:17-82
+153            <meta-data
+153-->[com.google.firebase:firebase-installations:17.0.1] C:\Users\Farzan\.gradle\caches\transforms-3\fff14db24c6b13b8ae5b1fc69fb4de53\transformed\jetified-firebase-installations-17.0.1\AndroidManifest.xml:18:13-20:85
+154                android:name="com.google.firebase.components:com.google.firebase.installations.FirebaseInstallationsRegistrar"
+154-->[com.google.firebase:firebase-installations:17.0.1] C:\Users\Farzan\.gradle\caches\transforms-3\fff14db24c6b13b8ae5b1fc69fb4de53\transformed\jetified-firebase-installations-17.0.1\AndroidManifest.xml:19:17-127
+155                android:value="com.google.firebase.components.ComponentRegistrar" />
+155-->[com.google.firebase:firebase-installations:17.0.1] C:\Users\Farzan\.gradle\caches\transforms-3\fff14db24c6b13b8ae5b1fc69fb4de53\transformed\jetified-firebase-installations-17.0.1\AndroidManifest.xml:20:17-82
+156        </service>
+157
+158        <provider
+158-->[com.google.firebase:firebase-common:20.1.0] C:\Users\Farzan\.gradle\caches\transforms-3\09679aaf74f5741904a8d682073e12ac\transformed\jetified-firebase-common-20.1.0\AndroidManifest.xml:26:9-31:39
+159            android:name="com.google.firebase.provider.FirebaseInitProvider"
+159-->[com.google.firebase:firebase-common:20.1.0] C:\Users\Farzan\.gradle\caches\transforms-3\09679aaf74f5741904a8d682073e12ac\transformed\jetified-firebase-common-20.1.0\AndroidManifest.xml:27:13-77
+160            android:authorities="com.example.photoUploader.firebaseinitprovider"
+160-->[com.google.firebase:firebase-common:20.1.0] C:\Users\Farzan\.gradle\caches\transforms-3\09679aaf74f5741904a8d682073e12ac\transformed\jetified-firebase-common-20.1.0\AndroidManifest.xml:28:13-72
+161            android:directBootAware="true"
+161-->[com.google.firebase:firebase-common:20.1.0] C:\Users\Farzan\.gradle\caches\transforms-3\09679aaf74f5741904a8d682073e12ac\transformed\jetified-firebase-common-20.1.0\AndroidManifest.xml:29:13-43
+162            android:exported="false"
+162-->[com.google.firebase:firebase-common:20.1.0] C:\Users\Farzan\.gradle\caches\transforms-3\09679aaf74f5741904a8d682073e12ac\transformed\jetified-firebase-common-20.1.0\AndroidManifest.xml:30:13-37
+163            android:initOrder="100" />
+163-->[com.google.firebase:firebase-common:20.1.0] C:\Users\Farzan\.gradle\caches\transforms-3\09679aaf74f5741904a8d682073e12ac\transformed\jetified-firebase-common-20.1.0\AndroidManifest.xml:31:13-36
+164
+165        <meta-data
+165-->[com.google.android.gms:play-services-basement:18.1.0] C:\Users\Farzan\.gradle\caches\transforms-3\b593dc37a5ef7423972394e6296399a6\transformed\jetified-play-services-basement-18.1.0\AndroidManifest.xml:21:9-23:69
+166            android:name="com.google.android.gms.version"
+166-->[com.google.android.gms:play-services-basement:18.1.0] C:\Users\Farzan\.gradle\caches\transforms-3\b593dc37a5ef7423972394e6296399a6\transformed\jetified-play-services-basement-18.1.0\AndroidManifest.xml:22:13-58
+167            android:value="@integer/google_play_services_version" />
+167-->[com.google.android.gms:play-services-basement:18.1.0] C:\Users\Farzan\.gradle\caches\transforms-3\b593dc37a5ef7423972394e6296399a6\transformed\jetified-play-services-basement-18.1.0\AndroidManifest.xml:23:13-66
+168
+169        <provider
+169-->[androidx.emoji2:emoji2:1.2.0] C:\Users\Farzan\.gradle\caches\transforms-3\33a0fa1510b502a6dce422ea03b69f24\transformed\jetified-emoji2-1.2.0\AndroidManifest.xml:24:9-32:20
+170            android:name="androidx.startup.InitializationProvider"
+170-->[androidx.emoji2:emoji2:1.2.0] C:\Users\Farzan\.gradle\caches\transforms-3\33a0fa1510b502a6dce422ea03b69f24\transformed\jetified-emoji2-1.2.0\AndroidManifest.xml:25:13-67
+171            android:authorities="com.example.photoUploader.androidx-startup"
+171-->[androidx.emoji2:emoji2:1.2.0] C:\Users\Farzan\.gradle\caches\transforms-3\33a0fa1510b502a6dce422ea03b69f24\transformed\jetified-emoji2-1.2.0\AndroidManifest.xml:26:13-68
+172            android:exported="false" >
+172-->[androidx.emoji2:emoji2:1.2.0] C:\Users\Farzan\.gradle\caches\transforms-3\33a0fa1510b502a6dce422ea03b69f24\transformed\jetified-emoji2-1.2.0\AndroidManifest.xml:27:13-37
+173            <meta-data
+173-->[androidx.emoji2:emoji2:1.2.0] C:\Users\Farzan\.gradle\caches\transforms-3\33a0fa1510b502a6dce422ea03b69f24\transformed\jetified-emoji2-1.2.0\AndroidManifest.xml:29:13-31:52
+174                android:name="androidx.emoji2.text.EmojiCompatInitializer"
+174-->[androidx.emoji2:emoji2:1.2.0] C:\Users\Farzan\.gradle\caches\transforms-3\33a0fa1510b502a6dce422ea03b69f24\transformed\jetified-emoji2-1.2.0\AndroidManifest.xml:30:17-75
+175                android:value="androidx.startup" />
+175-->[androidx.emoji2:emoji2:1.2.0] C:\Users\Farzan\.gradle\caches\transforms-3\33a0fa1510b502a6dce422ea03b69f24\transformed\jetified-emoji2-1.2.0\AndroidManifest.xml:31:17-49
+176            <meta-data
+176-->[androidx.lifecycle:lifecycle-process:2.4.1] C:\Users\Farzan\.gradle\caches\transforms-3\9d19e06b59ba985a28acc248cf9a4ddf\transformed\jetified-lifecycle-process-2.4.1\AndroidManifest.xml:31:13-33:52
+177                android:name="androidx.lifecycle.ProcessLifecycleInitializer"
+177-->[androidx.lifecycle:lifecycle-process:2.4.1] C:\Users\Farzan\.gradle\caches\transforms-3\9d19e06b59ba985a28acc248cf9a4ddf\transformed\jetified-lifecycle-process-2.4.1\AndroidManifest.xml:32:17-78
+178                android:value="androidx.startup" />
+178-->[androidx.lifecycle:lifecycle-process:2.4.1] C:\Users\Farzan\.gradle\caches\transforms-3\9d19e06b59ba985a28acc248cf9a4ddf\transformed\jetified-lifecycle-process-2.4.1\AndroidManifest.xml:33:17-49
+179        </provider>
+180    </application>
+181
+182</manifest>
