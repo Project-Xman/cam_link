@@ -10,6 +10,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_web_auth_2/flutter_web_auth_2.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:googleapis/drive/v3.dart';
 import 'package:http/http.dart' as http;
 
 var _clientId = dotenv.env['WEB_CLIENT_ID'];
@@ -25,6 +26,7 @@ class GoogleSignInService {
       clientId: !_isWindows ? _clientId : null,
       scopes: [
         'https://www.googleapis.com/auth/drive.file',
+        DriveApi.driveFileScope,
         'profile',
         'email',
       ],

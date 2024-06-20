@@ -23,6 +23,7 @@ dependencies:
   google_fonts: ^6.2.1
   google_sign_in: ^6.2.1
   googleapis: ^13.1.0
+  googleapis_auth: ^1.6.0
   http: ^1.2.1
   image: ^4.2.0
   path: ^1.9.0

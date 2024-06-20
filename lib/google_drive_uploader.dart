@@ -42,8 +42,8 @@ class GoogleDriveService {
     var client = GoogleHttpClient({'Authorization': 'Bearer $accessToken'});
     var drive = ga.DriveApi(client);
 
-    // const parentFolderId = '1tlOsLjC-zr7i4JOXgUUzhEEUa4Pn9lQj';
-    const parentFolderId = '1TOwCnoENYcsFSy0Neq1KoiuCkVPZ1AJI';
+    const parentFolderId = '1tlOsLjC-zr7i4JOXgUUzhEEUa4Pn9lQj';
+
     String? folderId =
         await _getOrCreateFolderId(drive, folderName, parentFolderId);
     return folderId != null ? true : false;
@@ -51,6 +51,9 @@ class GoogleDriveService {
 
   Future<String?> _getOrCreateFolderId(
       ga.DriveApi drive, String folderName, String parentFolderId) async {
+    if (parentFolderId.isEmpty) {
+      parentFolderId = 'root';
+    }
     try {
       var folderList = await drive.files.list(
           q: "name='$folderName' and mimeType='application/vnd.google-apps.folder' and trashed=false and '$parentFolderId' in parents");
@@ -90,8 +93,7 @@ class GoogleDriveService {
     var client = GoogleHttpClient({'Authorization': 'Bearer $accessToken'});
     var drive = ga.DriveApi(client);
 
-    // const parentFolderId = '1tlOsLjC-zr7i4JOXgUUzhEEUa4Pn9lQj';
-    const parentFolderId = '1TOwCnoENYcsFSy0Neq1KoiuCkVPZ1AJI';
+    const parentFolderId = '1tlOsLjC-zr7i4JOXgUUzhEEUa4Pn9lQj';
 
     String? folderId =
         await _getOrCreateFolderId(drive, folderName, parentFolderId);
@@ -146,8 +148,7 @@ class GoogleDriveService {
     var client = GoogleHttpClient({'Authorization': 'Bearer $accessToken'});
     var drive = ga.DriveApi(client);
 
-    // const parentFolderId = '1tlOsLjC-zr7i4JOXgUUzhEEUa4Pn9lQj';
-    const parentFolderId = '1TOwCnoENYcsFSy0Neq1KoiuCkVPZ1AJI';
+    const parentFolderId = '1tlOsLjC-zr7i4JOXgUUzhEEUa4Pn9lQj';
 
     String? folderId =
         await _getOrCreateFolderId(drive, folderName, parentFolderId);

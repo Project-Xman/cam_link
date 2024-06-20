@@ -96,6 +96,7 @@ class FileExplorerScreenState extends State<FileExplorerScreen> {
       setState(() {
         currentUser = user;
       });
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Current user: ${user?['name']}')),
@@ -654,7 +655,7 @@ class FileExplorerScreenState extends State<FileExplorerScreen> {
             if (constraints.maxWidth > 1200) {
               // Desktop layout
               return _buildDesktopLayout();
-            } else if (constraints.maxWidth > 600) {
+            } else if (constraints.maxWidth > 700) {
               // Tablet layout
               return _buildTabletLayout();
             } else {
@@ -902,13 +903,15 @@ class FileExplorerScreenState extends State<FileExplorerScreen> {
                               : Colors.orange),
                     ),
                     SizedBox(
-                      width: 350,
+                      width: 300,
                       child: Text(
                         _selectedOverlayImage?.isNotEmpty == true
                             ? _selectedOverlayImage!
                             : 'None',
                         style: const TextStyle(
-                            color: Colors.grey, fontWeight: FontWeight.w700),
+                            color: Colors.grey,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700),
                       ),
                     ),
                     const SizedBox(height: 10),
@@ -948,9 +951,9 @@ class FileExplorerScreenState extends State<FileExplorerScreen> {
                         Text(
                           currentUser == null
                               ? 'Not signed in'
-                              : 'Signed in as ${currentUser?['name']}',
+                              : '${currentUser?['name']}',
                           style: const TextStyle(
-                              fontSize: 14,
+                              fontSize: 12,
                               color: Colors.grey,
                               fontWeight: FontWeight.w700),
                         ),
@@ -1012,25 +1015,17 @@ class FileExplorerScreenState extends State<FileExplorerScreen> {
                           fontWeight: FontWeight.w700),
                     ),
                     const SizedBox(height: 20),
-                    SizedBox(
-                      width: 370,
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        mainAxisSize: MainAxisSize.max,
-                        children: [
-                          _buildImageCount(Icons.camera_alt,
-                              controller.totalImages, Colors.lightBlue),
-                          _buildImageCount(
-                              Icons.image,
-                              controller.totalImagesProcessed,
-                              Colors.deepOrange),
-                          _buildImageCount(
-                              Icons.upload,
-                              controller.totalImagesUploaded,
-                              Colors.lightGreen),
-                        ],
-                      ),
+                    Wrap(
+                      alignment: WrapAlignment.spaceEvenly,
+                      runAlignment: WrapAlignment.spaceEvenly,
+                      children: [
+                        _buildImageCount(Icons.camera_alt,
+                            controller.totalImages, Colors.lightBlue),
+                        _buildImageCount(Icons.image,
+                            controller.totalImagesProcessed, Colors.deepOrange),
+                        _buildImageCount(Icons.upload,
+                            controller.totalImagesUploaded, Colors.lightGreen),
+                      ],
                     )
                   ],
                 ),
