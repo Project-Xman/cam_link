@@ -1,6 +1,6 @@
 class AppValues {
   // App Information
-  static const String appName = 'Photo Uploader';
+  static const String appName = 'CamLink';
   static const String appVersion = '1.0.0';
   
   // UI Constants

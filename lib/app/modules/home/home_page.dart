@@ -7,6 +7,7 @@ import '../../shared/widgets/loading_widget.dart';
 import '../../shared/widgets/user_avatar.dart';
 import '../../shared/widgets/status_card.dart';
 import '../../shared/widgets/feature_card.dart';
+import '../../routes/app_routes.dart';
 
 /// Modern Material 3 home page
 class HomePage extends GetView<HomeController> {
@@ -55,11 +56,14 @@ class HomePage extends GetView<HomeController> {
       flexibleSpace: FlexibleSpaceBar(
         title: Text(
           AppStrings.appName,
+          textAlign: TextAlign.center,
           style: Theme.of(context).textTheme.headlineSmall?.copyWith(
             color: Theme.of(context).colorScheme.onPrimaryContainer,
             fontWeight: FontWeight.bold,
           ),
         ),
+        titlePadding: const EdgeInsets.only(bottom: 16.0),
+        centerTitle: true,
         background: Container(
           decoration: BoxDecoration(
             gradient: LinearGradient(
@@ -80,43 +84,6 @@ class HomePage extends GetView<HomeController> {
           ),
         ),
       ),
-      actions: [
-        IconButton(
-          onPressed: controller.showAppInfo,
-          icon: const Icon(Icons.info_outline),
-          tooltip: 'App Info',
-        ),
-        PopupMenuButton<String>(
-          onSelected: (value) {
-            switch (value) {
-              case 'refresh':
-                controller.refreshUserData();
-                break;
-              case 'permissions':
-                controller.checkPermissions();
-                break;
-            }
-          },
-          itemBuilder: (context) => [
-            const PopupMenuItem(
-              value: 'refresh',
-              child: ListTile(
-                leading: Icon(Icons.refresh),
-                title: Text('Refresh'),
-                contentPadding: EdgeInsets.zero,
-              ),
-            ),
-            const PopupMenuItem(
-              value: 'permissions',
-              child: ListTile(
-                leading: Icon(Icons.security),
-                title: Text('Check Permissions'),
-                contentPadding: EdgeInsets.zero,
-              ),
-            ),
-          ],
-        ),
-      ],
     );
   }
 
@@ -176,7 +143,7 @@ class HomePage extends GetView<HomeController> {
                 ),
                 const SizedBox(height: AppValues.paddingMedium),
                 Text(
-                  'Welcome to Photo Uploader',
+                  'Welcome to ${AppStrings.appName}',
                   style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
@@ -184,7 +151,7 @@ class HomePage extends GetView<HomeController> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Sign in with Google to start uploading and managing your photos',
+                  'Connect with Google to start uploading and managing your photos',
                   style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
@@ -194,7 +161,7 @@ class HomePage extends GetView<HomeController> {
                 FilledButton.icon(
                   onPressed: controller.signInWithGoogle,
                   icon: const Icon(Icons.login),
-                  label: const Text('Sign in with Google'),
+                  label: const Text('Connect in with Google Drive'),
                 ),
               ],
             ),
@@ -286,7 +253,7 @@ class HomePage extends GetView<HomeController> {
               icon: Icons.settings,
               title: 'Settings',
               description: 'Configure app preferences and options',
-              onTap: () {}, // TODO: Navigate to settings
+              onTap: () => Get.toNamed(AppRoutes.settings),
               enabled: true,
             ),
           ],

@@ -22,6 +22,9 @@ Future<void> main() async {
   // Load environment variables
   await dotenv.load(fileName: "lib/.env");
 
+  // Initialize services
+  InitialBinding().dependencies();
+
   // Initialize Firebase
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
@@ -43,7 +46,7 @@ class PhotoUploaderApp extends StatelessWidget {
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
       themeMode: ThemeMode.system,
-      initialRoute: AppRoutes.home,
+      initialRoute: AppRoutes.splash, // Start with splash screen
       getPages: AppRoutes.pages,
       defaultTransition: Transition.cupertino,
       transitionDuration: const Duration(milliseconds: 300),

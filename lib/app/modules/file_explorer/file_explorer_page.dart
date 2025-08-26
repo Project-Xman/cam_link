@@ -62,16 +62,10 @@ class FileExplorerPage extends GetView<FileExplorerController> {
             child: _buildFileExplorer(context),
           ),
           const SizedBox(width: 16),
-          // Settings and status sidebar
+          // Status sidebar
           SizedBox(
             width: 400,
-            child: Column(
-              children: [
-                Expanded(child: _buildSettingsCard(context)),
-                const SizedBox(height: 16),
-                _buildStatusCard(context),
-              ],
-            ),
+            child: _buildStatusCard(context),
           ),
         ],
       ),
@@ -83,16 +77,10 @@ class FileExplorerPage extends GetView<FileExplorerController> {
       padding: const EdgeInsets.all(16.0),
       child: Column(
         children: [
-          // Settings row
+          // Status row
           SizedBox(
             height: 300,
-            child: Row(
-              children: [
-                Expanded(child: _buildSettingsCard(context)),
-                const SizedBox(width: 16),
-                Expanded(child: _buildStatusCard(context)),
-              ],
-            ),
+            child: _buildStatusCard(context),
           ),
           const SizedBox(height: 16),
           // File explorer
@@ -113,7 +101,7 @@ class FileExplorerPage extends GetView<FileExplorerController> {
             indicatorColor: Theme.of(context).colorScheme.primary,
             tabs: const [
               Tab(text: 'Files', icon: Icon(Icons.folder_outlined)),
-              Tab(text: 'Settings', icon: Icon(Icons.settings)),
+              Tab(text: 'Status', icon: Icon(Icons.analytics)),
             ],
           ),
           Expanded(
@@ -122,13 +110,7 @@ class FileExplorerPage extends GetView<FileExplorerController> {
                 _buildFileExplorer(context),
                 Padding(
                   padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    children: [
-                      Expanded(child: _buildSettingsCard(context)),
-                      const SizedBox(height: 16),
-                      _buildStatusCard(context),
-                    ],
-                  ),
+                  child: _buildStatusCard(context),
                 ),
               ],
             ),
@@ -359,191 +341,6 @@ class FileExplorerPage extends GetView<FileExplorerController> {
     );
   }
 
-  Widget _buildSettingsCard(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    
-    return Card(
-      elevation: 0,
-      color: colorScheme.surfaceContainerLow,
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Header
-            Row(
-              children: [
-                Icon(Icons.settings_outlined, color: colorScheme.primary),
-                const SizedBox(width: 8),
-                Text(
-                  AppStrings.settings,
-                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            
-            Expanded(
-              child: SingleChildScrollView(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Folder Selection
-                    _buildSettingSection(
-                      context,
-                      'Folders',
-                      [
-                        ListTile(
-                          leading: const Icon(Icons.folder_outlined),
-                          title: const Text('Input Folder'),
-                          subtitle: Obx(() => Text(
-                            controller.selectedPath.value.isNotEmpty
-                                ? path.basename(controller.selectedPath.value)
-                                : 'Not selected',
-                          )),
-                          trailing: const Icon(Icons.chevron_right),
-                          onTap: _selectFolder,
-                        ),
-                        ListTile(
-                          leading: const Icon(Icons.folder_open_outlined),
-                          title: const Text('Output Folder'),
-                          subtitle: Obx(() => Text(
-                            controller.outputPath.value.isNotEmpty
-                                ? path.basename(controller.outputPath.value)
-                                : 'Not selected',
-                          )),
-                          trailing: const Icon(Icons.chevron_right),
-                          onTap: _selectOutputFolder,
-                        ),
-                      ],
-                    ),
-                    
-                    const SizedBox(height: 16),
-                    
-                    // Processing Settings
-                    _buildSettingSection(
-                      context,
-                      'Processing',
-                      [
-                        ListTile(
-                          leading: const Icon(Icons.photo_size_select_actual_outlined),
-                          title: const Text(AppStrings.resolution),
-                          subtitle: Obx(() => Text(
-                            '${controller.resolutionWidth.value} x ${controller.resolutionHeight.value}',
-                          )),
-                          trailing: const Icon(Icons.chevron_right),
-                          onTap: () => _showResolutionDialog(context),
-                        ),
-                        Obx(() => SwitchListTile(
-                          secondary: const Icon(Icons.save_outlined),
-                          title: const Text(AppStrings.saveToDevice),
-                          subtitle: const Text('Save processed images locally'),
-                          value: controller.saveOutputToDevice.value,
-                          onChanged: (_) => controller.toggleSaveToDevice(),
-                        )),
-                        ListTile(
-                          leading: const Icon(Icons.image_outlined),
-                          title: const Text('Overlay Image'),
-                          subtitle: Obx(() => Text(
-                            controller.selectedOverlayImage.value != null
-                                ? path.basename(controller.selectedOverlayImage.value!)
-                                : 'None selected',
-                          )),
-                          trailing: const Icon(Icons.chevron_right),
-                          onTap: _selectOverlayImage,
-                        ),
-                      ],
-                    ),
-                    
-                    const SizedBox(height: 16),
-                    
-                    // Cloud Settings
-                    _buildSettingSection(
-                      context,
-                      'Google Drive',
-                      [
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                AppStrings.cloudFolderName,
-                                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: Obx(() => TextField(
-                                      controller: TextEditingController(
-                                        text: controller.folderNameController.value,
-                                      ),
-                                      decoration: InputDecoration(
-                                        hintText: 'Enter folder name',
-                                        border: const OutlineInputBorder(),
-                                        enabled: !controller.cloudFolderCreated.value,
-                                      ),
-                                      onChanged: (value) {
-                                        controller.folderNameController.value = value;
-                                      },
-                                    )),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Obx(() => FilledButton(
-                                    onPressed: controller.cloudFolderCreated.value
-                                        ? null
-                                        : controller.createCloudFolder,
-                                    child: Text(
-                                      controller.cloudFolderCreated.value
-                                          ? 'Created'
-                                          : 'Create',
-                                    ),
-                                  )),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSettingSection(BuildContext context, String title, List<Widget> children) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Text(
-            title,
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ),
-        const SizedBox(height: 8),
-        Card(
-          elevation: 0,
-          color: Theme.of(context).colorScheme.surface,
-          child: Column(children: children),
-        ),
-      ],
-    );
-  }
-
   Widget _buildStatusCard(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     
@@ -642,80 +439,5 @@ class FileExplorerPage extends GetView<FileExplorerController> {
     if (result != null) {
       await controller.selectFolder(result);
     }
-  }
-
-  Future<void> _selectOutputFolder() async {
-    final result = await FilePicker.platform.getDirectoryPath();
-    if (result != null) {
-      await controller.selectOutputFolder(result);
-    }
-  }
-
-  Future<void> _selectOverlayImage() async {
-    final result = await FilePicker.platform.pickFiles(
-      type: FileType.custom,
-      allowedExtensions: ['png'],
-    );
-    
-    if (result != null && result.files.single.path != null) {
-      await controller.selectOverlayImage(result.files.single.path!);
-    }
-  }
-
-  Future<void> _showResolutionDialog(BuildContext context) async {
-    int? width = controller.resolutionWidth.value;
-    int? height = controller.resolutionHeight.value;
-
-    await showDialog<void>(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('Set Resolution'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                decoration: const InputDecoration(
-                  labelText: 'Width',
-                  border: OutlineInputBorder(),
-                ),
-                keyboardType: TextInputType.number,
-                controller: TextEditingController(text: width.toString()),
-                onChanged: (value) {
-                  width = int.tryParse(value);
-                },
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                decoration: const InputDecoration(
-                  labelText: 'Height',
-                  border: OutlineInputBorder(),
-                ),
-                keyboardType: TextInputType.number,
-                controller: TextEditingController(text: height.toString()),
-                onChanged: (value) {
-                  height = int.tryParse(value);
-                },
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Cancel'),
-            ),
-            FilledButton(
-              onPressed: () {
-                if (width != null && height != null && width! > 0 && height! > 0) {
-                  controller.updateResolution(width!, height!);
-                  Navigator.of(context).pop();
-                }
-              },
-              child: const Text('Save'),
-            ),
-          ],
-        );
-      },
-    );
   }
 }

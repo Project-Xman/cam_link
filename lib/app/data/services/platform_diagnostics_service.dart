@@ -1,10 +1,11 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import '../../core/errors/app_exception.dart';
 
-/// Platform diagnostics service for debugging platform channel issues
+/// Service for platform diagnostics and plugin health checks
 class PlatformDiagnosticsService extends GetxService {
   static PlatformDiagnosticsService get to => Get.find();
 
@@ -84,7 +85,13 @@ class PlatformDiagnosticsService extends GetxService {
         case 'file_picker':
           // Test file picker channel without showing UI
           const channel = MethodChannel('miguelruivo.flutter.plugins.filepicker');
-          await channel.invokeMethod('clear');
+          try {
+            await channel.invokeMethod('clear');
+          } catch (e) {
+            // Some versions might not have 'clear' method, that's OK
+            // Just check if channel exists by trying a simple method
+            await channel.invokeMethod('any'); // This will likely fail but won't throw MissingPluginException
+          }
           break;
           
         case 'permission_handler':
@@ -118,6 +125,11 @@ class PlatformDiagnosticsService extends GetxService {
         return; // Channel is accessible
       }
       rethrow; // Re-throw if it's a serious channel error
+    } on MissingPluginException catch (e) {
+      // Plugin not available, record the error but don't fail
+      _platformChannelErrors.add('Plugin $pluginName not available: $e');
+      _pluginStatus[pluginName] = false;
+      return;
     }
   }
 

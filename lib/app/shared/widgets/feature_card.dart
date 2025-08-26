@@ -45,29 +45,33 @@ class FeatureCard extends StatelessWidget {
                 color: effectiveIconColor,
               ),
               const SizedBox(height: AppValues.paddingSmall),
-              Text(
-                title,
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                  color: enabled 
-                      ? colorScheme.onSurface 
-                      : colorScheme.onSurfaceVariant,
+              Expanded(
+                child: Text(
+                  title,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: enabled 
+                        ? colorScheme.onSurface 
+                        : colorScheme.onSurfaceVariant,
+                  ),
+                  textAlign: TextAlign.center,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
-                textAlign: TextAlign.center,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
               ),
               const SizedBox(height: 4),
-              Text(
-                description,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: enabled 
-                      ? colorScheme.onSurfaceVariant 
-                      : colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+              Expanded(
+                child: Text(
+                  description,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: enabled 
+                        ? colorScheme.onSurfaceVariant 
+                        : colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+                  ),
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                 ),
-                textAlign: TextAlign.center,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
               ),
               if (!enabled) ...[
                 const SizedBox(height: AppValues.paddingSmall),
@@ -85,6 +89,8 @@ class FeatureCard extends StatelessWidget {
                     style: Theme.of(context).textTheme.labelSmall?.copyWith(
                       color: colorScheme.onErrorContainer,
                     ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
               ],

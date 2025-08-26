@@ -23,11 +23,15 @@ class AuthService extends GetxService {
   static AuthService get to => Get.find();
 
   // Configuration
-  late final String? _clientId;
-  late final String? _clientSecret;
+  String? _clientId;
+  String? _clientSecret;
   late final GoogleSignIn _googleSignIn;
   late final FlutterSecureStorage _storage;
   final bool _isWindows = !kIsWeb && Platform.isWindows;
+
+  // Flags to track initialization
+  bool _isInitialized = false;
+  bool _isInitializing = false;
 
   // Reactive variables
   final _authStatus = AuthStatus.unknown.obs;
@@ -52,14 +56,25 @@ class AuthService extends GetxService {
 
   /// Initialize the authentication service
   Future<void> _initializeService() async {
+    // Prevent double initialization
+    if (_isInitialized || _isInitializing) {
+      return;
+    }
+    
+    _isInitializing = true;
+    
     try {
-      _clientId = dotenv.env['WEB_CLIENT_ID'];
-      _clientSecret = dotenv.env['WEB_CLIENT_SECRET'];
-      
+      // Initialize client IDs
       if (_clientId == null) {
-        throw AuthException.signInFailed('Client ID not configured');
+        _clientId = dotenv.env['WEB_CLIENT_ID'];
+        _clientSecret = dotenv.env['WEB_CLIENT_SECRET'];
+        
+        if (_clientId == null) {
+          throw AuthException.signInFailed('Client ID not configured');
+        }
       }
 
+      // Initialize storage
       _storage = const FlutterSecureStorage(
         aOptions: AndroidOptions(
           encryptedSharedPreferences: true,
@@ -69,6 +84,7 @@ class AuthService extends GetxService {
         ),
       );
 
+      // Initialize Google Sign In
       _googleSignIn = GoogleSignIn(
         clientId: !_isWindows ? _clientId : null,
         scopes: [
@@ -80,6 +96,7 @@ class AuthService extends GetxService {
         serverClientId: _clientId,
       );
 
+      _isInitialized = true;
       ErrorHandler.logInfo('AuthService initialized successfully');
     } on PlatformException catch (e) {
       ErrorHandler.logError('PlatformException during AuthService initialization', error: e, context: 'AuthService._initializeService');
@@ -91,6 +108,8 @@ class AuthService extends GetxService {
       ErrorHandler.handleError(e, context: 'AuthService._initializeService');
       _authStatus.value = AuthStatus.error;
       rethrow;
+    } finally {
+      _isInitializing = false;
     }
   }
 
@@ -102,21 +121,36 @@ class AuthService extends GetxService {
         final refreshToken = await _storage.read(key: 'refreshToken');
         
         if (accessToken != null || refreshToken != null) {
-          await _loadCurrentUser();
+          try {
+            await _loadCurrentUser();
+          } catch (e) {
+            // If we can't load the current user, just set as signed out
+            ErrorHandler.logWarning('Failed to load current user during initialization: $e', 'AuthService._checkSignInStatus');
+            _authStatus.value = AuthStatus.signedOut;
+            // Clear invalid tokens
+            await _storage.delete(key: 'accessToken');
+            await _storage.delete(key: 'refreshToken');
+          }
         } else {
           _authStatus.value = AuthStatus.signedOut;
         }
       } else {
         final account = await _googleSignIn.signInSilently();
         if (account != null) {
-          await _loadCurrentUser();
+          try {
+            await _loadCurrentUser();
+          } catch (e) {
+            // If we can't load the current user, just set as signed out
+            ErrorHandler.logWarning('Failed to load current user during initialization: $e', 'AuthService._checkSignInStatus');
+            _authStatus.value = AuthStatus.signedOut;
+          }
         } else {
           _authStatus.value = AuthStatus.signedOut;
         }
       }
     } catch (e) {
       ErrorHandler.handleError(e, context: 'AuthService._checkSignInStatus');
-      _authStatus.value = AuthStatus.error;
+      _authStatus.value = AuthStatus.signedOut; // Default to signed out on error
     }
   }
 

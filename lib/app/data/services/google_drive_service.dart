@@ -22,10 +22,15 @@ class GoogleDriveService extends GetxService {
 
   late final AuthService _authService;
 
+  /// Constructor that accepts AuthService dependency
+  GoogleDriveService({AuthService? authService}) {
+    _authService = authService ?? AuthService.to;
+  }
+
   @override
   void onInit() {
     super.onInit();
-    _authService = AuthService.to;
+    // Don't try to access AuthService.to here as it might not be initialized yet
   }
 
   /// Get Google Drive storage information

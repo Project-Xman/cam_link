@@ -8,19 +8,52 @@ import '../../core/values/app_values.dart';
 class StorageService extends GetxService {
   static StorageService get to => Get.find();
   
-  late final GetStorage _box;
+  GetStorage? _box;
+  bool _isInitialized = false;
+  bool _isInitializing = false;
   
   @override
   Future<void> onInit() async {
     super.onInit();
-    await GetStorage.init();
-    _box = GetStorage();
+    await _initializeStorage();
+  }
+
+  /// Initialize storage
+  Future<void> _initializeStorage() async {
+    // Prevent double initialization
+    if (_isInitialized || _isInitializing) {
+      return;
+    }
+    
+    _isInitializing = true;
+    
+    try {
+      await GetStorage.init();
+      _box ??= GetStorage();
+      _isInitialized = true;
+    } finally {
+      _isInitializing = false;
+    }
+  }
+
+  /// Ensure storage is initialized
+  Future<void> _ensureInitialized() async {
+    if (!_isInitialized) {
+      await _initializeStorage();
+    }
+    
+    if (_box == null) {
+      await GetStorage.init();
+      _box = GetStorage();
+      _isInitialized = true;
+    }
   }
 
   /// Save user data
   Future<void> saveUser(UserModel user) async {
+    await _ensureInitialized();
     try {
-      await _box.write(AppValues.userPrefsKey, user.toJson());
+      await _box!.write(AppValues.userPrefsKey, user.toJson());
     } catch (e) {
       throw FileException.accessDenied('user preferences');
     }
@@ -28,8 +61,9 @@ class StorageService extends GetxService {
 
   /// Get saved user data
   UserModel? getUser() {
+    if (_box == null) return null;
     try {
-      final userData = _box.read<Map<String, dynamic>>(AppValues.userPrefsKey);
+      final userData = _box!.read<Map<String, dynamic>>(AppValues.userPrefsKey);
       if (userData != null) {
         return UserModel.fromJson(userData);
       }
@@ -41,8 +75,9 @@ class StorageService extends GetxService {
 
   /// Remove user data
   Future<void> removeUser() async {
+    await _ensureInitialized();
     try {
-      await _box.remove(AppValues.userPrefsKey);
+      await _box!.remove(AppValues.userPrefsKey);
     } catch (e) {
       throw FileException.accessDenied('user preferences');
     }
@@ -50,8 +85,9 @@ class StorageService extends GetxService {
 
   /// Save theme mode
   Future<void> saveThemeMode(String themeMode) async {
+    await _ensureInitialized();
     try {
-      await _box.write(AppValues.themeKey, themeMode);
+      await _box!.write(AppValues.themeKey, themeMode);
     } catch (e) {
       throw FileException.accessDenied('theme preferences');
     }
@@ -59,8 +95,9 @@ class StorageService extends GetxService {
 
   /// Get saved theme mode
   String? getThemeMode() {
+    if (_box == null) return null;
     try {
-      return _box.read<String>(AppValues.themeKey);
+      return _box!.read<String>(AppValues.themeKey);
     } catch (e) {
       return null;
     }
@@ -68,8 +105,9 @@ class StorageService extends GetxService {
 
   /// Save language code
   Future<void> saveLanguageCode(String languageCode) async {
+    await _ensureInitialized();
     try {
-      await _box.write(AppValues.languageKey, languageCode);
+      await _box!.write(AppValues.languageKey, languageCode);
     } catch (e) {
       throw FileException.accessDenied('language preferences');
     }
@@ -77,8 +115,9 @@ class StorageService extends GetxService {
 
   /// Get saved language code
   String? getLanguageCode() {
+    if (_box == null) return null;
     try {
-      return _box.read<String>(AppValues.languageKey);
+      return _box!.read<String>(AppValues.languageKey);
     } catch (e) {
       return null;
     }
@@ -86,8 +125,9 @@ class StorageService extends GetxService {
 
   /// Save generic data
   Future<void> saveData<T>(String key, T value) async {
+    await _ensureInitialized();
     try {
-      await _box.write(key, value);
+      await _box!.write(key, value);
     } catch (e) {
       throw FileException.accessDenied(key);
     }
@@ -95,8 +135,9 @@ class StorageService extends GetxService {
 
   /// Get generic data
   T? getData<T>(String key) {
+    if (_box == null) return null;
     try {
-      return _box.read<T>(key);
+      return _box!.read<T>(key);
     } catch (e) {
       return null;
     }
@@ -104,8 +145,9 @@ class StorageService extends GetxService {
 
   /// Remove data by key
   Future<void> removeData(String key) async {
+    await _ensureInitialized();
     try {
-      await _box.remove(key);
+      await _box!.remove(key);
     } catch (e) {
       throw FileException.accessDenied(key);
     }
@@ -113,8 +155,9 @@ class StorageService extends GetxService {
 
   /// Clear all data
   Future<void> clearAll() async {
+    await _ensureInitialized();
     try {
-      await _box.erase();
+      await _box!.erase();
     } catch (e) {
       throw FileException.accessDenied('storage');
     }
@@ -122,8 +165,9 @@ class StorageService extends GetxService {
 
   /// Check if key exists
   bool hasData(String key) {
+    if (_box == null) return false;
     try {
-      return _box.hasData(key);
+      return _box!.hasData(key);
     } catch (e) {
       return false;
     }
@@ -131,8 +175,9 @@ class StorageService extends GetxService {
 
   /// Get all keys
   Iterable<String> getAllKeys() {
+    if (_box == null) return [];
     try {
-      return _box.getKeys().cast<String>();
+      return _box!.getKeys().cast<String>();
     } catch (e) {
       return [];
     }
@@ -140,13 +185,16 @@ class StorageService extends GetxService {
 
   /// Listen to changes for a specific key
   void listenKey(String key, void Function(dynamic) callback) {
-    _box.listenKey(key, callback);
+    if (_box != null) {
+      _box!.listenKey(key, callback);
+    }
   }
 
   /// Save app settings
   Future<void> saveAppSettings(Map<String, dynamic> settings) async {
+    await _ensureInitialized();
     try {
-      await _box.write('app_settings', settings);
+      await _box!.write('app_settings', settings);
     } catch (e) {
       throw FileException.accessDenied('app settings');
     }
@@ -154,8 +202,9 @@ class StorageService extends GetxService {
 
   /// Get app settings
   Map<String, dynamic> getAppSettings() {
+    if (_box == null) return {};
     try {
-      return _box.read<Map<String, dynamic>>('app_settings') ?? {};
+      return _box!.read<Map<String, dynamic>>('app_settings') ?? {};
     } catch (e) {
       return {};
     }
@@ -163,8 +212,9 @@ class StorageService extends GetxService {
 
   /// Save recent folders
   Future<void> saveRecentFolders(List<String> folders) async {
+    await _ensureInitialized();
     try {
-      await _box.write('recent_folders', folders);
+      await _box!.write('recent_folders', folders);
     } catch (e) {
       throw FileException.accessDenied('recent folders');
     }
@@ -172,8 +222,9 @@ class StorageService extends GetxService {
 
   /// Get recent folders
   List<String> getRecentFolders() {
+    if (_box == null) return [];
     try {
-      final folders = _box.read<List>('recent_folders');
+      final folders = _box!.read<List>('recent_folders');
       return folders?.cast<String>() ?? [];
     } catch (e) {
       return [];
@@ -187,6 +238,7 @@ class StorageService extends GetxService {
     required bool saveToDevice,
     String? overlayImagePath,
   }) async {
+    await _ensureInitialized();
     try {
       final settings = {
         'width': width,
@@ -194,7 +246,7 @@ class StorageService extends GetxService {
         'saveToDevice': saveToDevice,
         'overlayImagePath': overlayImagePath,
       };
-      await _box.write('processing_settings', settings);
+      await _box!.write('processing_settings', settings);
     } catch (e) {
       throw FileException.accessDenied('processing settings');
     }
@@ -202,8 +254,15 @@ class StorageService extends GetxService {
 
   /// Get processing settings
   Map<String, dynamic> getProcessingSettings() {
+    if (_box == null) return {
+      'width': AppValues.defaultImageWidth,
+      'height': AppValues.defaultImageHeight,
+      'saveToDevice': false,
+      'overlayImagePath': null,
+    };
+    
     try {
-      return _box.read<Map<String, dynamic>>('processing_settings') ?? {
+      return _box!.read<Map<String, dynamic>>('processing_settings') ?? {
         'width': AppValues.defaultImageWidth,
         'height': AppValues.defaultImageHeight,
         'saveToDevice': false,

@@ -1,6 +1,6 @@
 class AppStrings {
   // App General
-  static const String appName = 'Photo Uploader';
+  static const String appName = 'Cam Link';
   static const String loading = 'Loading...';
   static const String error = 'Error';
   static const String success = 'Success';

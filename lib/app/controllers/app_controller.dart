@@ -14,6 +14,10 @@ class AppController extends GetxController {
   late final ConnectivityService _connectivityService;
   late final PlatformDiagnosticsService _diagnosticsService;
 
+  // Flags to track initialization
+  bool _servicesInitialized = false;
+  bool _isInitializing = false;
+
   // Reactive variables
   final _themeMode = ThemeMode.system.obs;
   final _locale = const Locale('en', 'US').obs;
@@ -31,22 +35,58 @@ class AppController extends GetxController {
   @override
   Future<void> onInit() async {
     super.onInit();
-    await _initializeServices();
+    await _initializeServicesIfNeeded();
     await _loadSavedSettings();
     _isInitialized.value = true;
     ErrorHandler.logInfo('AppController initialized');
   }
 
-  /// Initialize required services
-  Future<void> _initializeServices() async {
+  /// Initialize required services only if not already initialized
+  Future<void> _initializeServicesIfNeeded() async {
+    // Prevent double initialization
+    if (_servicesInitialized || _isInitializing) {
+      // Wait for initialization to complete if it's in progress
+      while (_isInitializing) {
+        await Future.delayed(const Duration(milliseconds: 10));
+      }
+      return;
+    }
+
+    _isInitializing = true;
+    
     try {
       _storageService = Get.find<StorageService>();
       _connectivityService = Get.find<ConnectivityService>();
       _diagnosticsService = Get.find<PlatformDiagnosticsService>();
+      _servicesInitialized = true;
     } catch (e) {
       ErrorHandler.handleError(e, context: 'AppController._initializeServices');
       rethrow;
+    } finally {
+      _isInitializing = false;
     }
+  }
+
+  /// Get service with retry mechanism
+  Future<T> _getServiceWithRetry<T>() async {
+    int attempts = 0;
+    const maxAttempts = 5;
+    const retryDelay = Duration(milliseconds: 100);
+    
+    while (attempts < maxAttempts) {
+      try {
+        return Get.find<T>();
+      } catch (e) {
+        attempts++;
+        if (attempts >= maxAttempts) {
+          rethrow;
+        }
+        await Future.delayed(retryDelay);
+      }
+    }
+    
+    // This should never be reached
+    throw Exception('Failed to get service after $maxAttempts attempts');
   }
 
   /// Load saved app settings
