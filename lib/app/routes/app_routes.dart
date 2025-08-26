@@ -7,8 +7,11 @@ import '../modules/splash/splash_page.dart';
 import '../modules/splash/splash_binding.dart';
 import '../modules/settings/settings_page.dart';
 import '../modules/settings/settings_binding.dart';
-// import '../modules/auth/auth_page.dart';
-// import '../modules/auth/auth_binding.dart';
+import '../modules/auth/pages/login_page.dart';
+import '../modules/auth/pages/signup_page.dart';
+import '../modules/auth/pages/forgot_password_page.dart';
+import '../modules/auth/pages/admin_approval_page.dart';
+import '../modules/auth/auth_binding.dart';
 
 /// App routes configuration
 class AppRoutes {
@@ -16,6 +19,10 @@ class AppRoutes {
   static const String home = '/home';
   static const String fileExplorer = '/file-explorer';
   static const String auth = '/auth';
+  static const String login = '/auth/login';
+  static const String signup = '/auth/signup';
+  static const String forgotPassword = '/auth/forgot-password';
+  static const String adminApproval = '/auth/admin-approval';
   static const String settings = '/settings';
   static const String about = '/about';
 
@@ -45,12 +52,31 @@ class AppRoutes {
       binding: SettingsBinding(),
       transition: Transition.cupertino,
     ),
-    // GetPage(
-    //   name: auth,
-    //   page: () => const AuthPage(),
-    //   binding: AuthBinding(),
-    //   transition: Transition.cupertino,
-    // ),
+    // Authentication routes
+    GetPage(
+      name: login,
+      page: () => const LoginPage(),
+      binding: AuthBinding(),
+      transition: Transition.cupertino,
+    ),
+    GetPage(
+      name: signup,
+      page: () => const SignupPage(),
+      binding: AuthBinding(),
+      transition: Transition.cupertino,
+    ),
+    GetPage(
+      name: forgotPassword,
+      page: () => const ForgotPasswordPage(),
+      binding: AuthBinding(),
+      transition: Transition.cupertino,
+    ),
+    GetPage(
+      name: adminApproval,
+      page: () => const AdminApprovalPage(),
+      binding: AuthBinding(),
+      transition: Transition.cupertino,
+    ),
   ];
 
   /// Navigation methods
@@ -58,7 +84,10 @@ class AppRoutes {
   static void toHome() => Get.offAllNamed(home);
   static void toFileExplorer() => Get.toNamed(fileExplorer);
   static void toSettings() => Get.toNamed(settings);
-  static void toAuth() => Get.toNamed(auth);
+  static void toLogin() => Get.offAllNamed(login);
+  static void toSignup() => Get.toNamed(signup);
+  static void toForgotPassword() => Get.toNamed(forgotPassword);
+  static void toAdminApproval() => Get.offAllNamed(adminApproval);
   static void back() => Get.back();
 
   /// Check if current route matches
@@ -66,5 +95,8 @@ class AppRoutes {
   static bool get isHome => Get.currentRoute == home;
   static bool get isFileExplorer => Get.currentRoute == fileExplorer;
   static bool get isSettings => Get.currentRoute == settings;
-  static bool get isAuth => Get.currentRoute == auth;
+  static bool get isLogin => Get.currentRoute == login;
+  static bool get isSignup => Get.currentRoute == signup;
+  static bool get isForgotPassword => Get.currentRoute == forgotPassword;
+  static bool get isAdminApproval => Get.currentRoute == adminApproval;
 }

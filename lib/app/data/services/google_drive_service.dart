@@ -9,7 +9,7 @@ import 'package:http/io_client.dart';
 import 'package:path/path.dart' as path;
 import '../models/enums.dart';
 import '../models/drive_storage_model.dart';
-import 'auth_service.dart';
+import 'google_oauth_service.dart';
 import '../../core/errors/app_exception.dart';
 import '../../core/values/app_values.dart';
 

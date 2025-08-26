@@ -8,6 +8,7 @@ import 'package:photo_uploader/app/core/theme/app_theme.dart';
 import 'package:photo_uploader/app/core/values/app_strings.dart';
 import 'package:photo_uploader/app/routes/app_routes.dart';
 import 'package:photo_uploader/overlay.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 @pragma("vm:entry-point")
 void overlayMain() {
@@ -28,6 +29,12 @@ Future<void> main() async {
   // Initialize Firebase
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
+  );
+
+  // Initialize Supabase
+  await Supabase.initialize(
+    url: 'https://btzrowrpwphjcbdyudzp.supabase.co',
+    anonKey: 'sb_publishable_yRbm7Vhz0A2WEMKCTQObzg_r6GUio4u',
   );
 
   // Run the app

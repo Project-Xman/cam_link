@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import '../../../data/services/auth_service.dart';
+import '../../../data/services/google_oauth_service.dart';
 import '../../../data/services/connectivity_service.dart';
 import '../../../data/models/user_model.dart';
 import '../../../data/models/enums.dart';

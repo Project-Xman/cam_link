@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/values/app_strings.dart';
 import '../../controllers/app_controller.dart';
-import '../../data/services/auth_service.dart';
+import '../../data/services/google_oauth_service.dart';
 import '../../data/services/storage_service.dart';
 import '../../data/services/connectivity_service.dart';
+import '../../data/services/supabase_auth_service.dart';
 import '../../routes/app_routes.dart';
 
 /// Splash screen to initialize app services
@@ -22,7 +24,7 @@ class _SplashPageState extends State<SplashPage> {
     _initializeApp();
   }
 
-  /// Initialize app services and navigate to home
+  /// Initialize app services and navigate to appropriate screen
   Future<void> _initializeApp() async {
     try {
       // Add a small delay to show the splash screen
@@ -31,10 +33,8 @@ class _SplashPageState extends State<SplashPage> {
       // Ensure all services are initialized by waiting for them to be available
       await _waitForServices();
       
-      // Navigate to home
-      if (mounted) {
-        AppRoutes.toHome();
-      }
+      // Check authentication status
+      await _checkAuthStatus();
     } catch (e) {
       // Handle initialization errors
       if (mounted) {
@@ -45,10 +45,9 @@ class _SplashPageState extends State<SplashPage> {
           colorText: Colors.white,
         );
         
-        // Still navigate to home as fallback after a delay
-        await Future.delayed(const Duration(seconds: 3));
+        // Navigate to login as fallback
         if (mounted) {
-          AppRoutes.toHome();
+          AppRoutes.toLogin();
         }
       }
     }
@@ -65,6 +64,7 @@ class _SplashPageState extends State<SplashPage> {
         final storageService = Get.find<StorageService>();
         final connectivityService = Get.find<ConnectivityService>();
         final authService = Get.find<AuthService>();
+        final supabaseAuthService = Get.find<SupabaseAuthService>();
         final appController = Get.find<AppController>();
         
         // If we get here, all services are available
@@ -76,6 +76,37 @@ class _SplashPageState extends State<SplashPage> {
         }
         // Wait before trying again
         await Future.delayed(const Duration(milliseconds: 500));
+      }
+    }
+  }
+
+  /// Check authentication status and navigate accordingly
+  Future<void> _checkAuthStatus() async {
+    if (mounted) {
+      try {
+        // Check Supabase auth status
+        final supabaseAuth = Supabase.instance.client.auth;
+        final session = supabaseAuth.currentSession;
+        
+        if (session != null) {
+          // Check if user is approved
+          final supabaseAuthService = Get.find<SupabaseAuthService>();
+          final approved = await supabaseAuthService.isUserApproved();
+          
+          if (approved) {
+            // User is authenticated and approved
+            AppRoutes.toHome();
+          } else {
+            // User is authenticated but not approved
+            AppRoutes.toAdminApproval();
+          }
+        } else {
+          // User is not authenticated
+          AppRoutes.toLogin();
+        }
+      } catch (e) {
+        // Navigate to login on error
+        AppRoutes.toLogin();
       }
     }
   }

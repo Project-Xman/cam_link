@@ -8,7 +8,7 @@ import '../../data/models/enums.dart';
 import '../../data/models/file_status_model.dart';
 import '../../data/services/image_processing_service.dart';
 import '../../data/services/google_drive_service.dart';
-import '../../data/services/auth_service.dart';
+import '../../data/services/google_oauth_service.dart';
 import '../../core/errors/app_exception.dart';
 import '../../core/values/app_strings.dart';
 

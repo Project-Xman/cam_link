@@ -10,6 +10,7 @@ class UserModel extends Equatable {
   final String? refreshToken;
   final DateTime? tokenExpiry;
   final Map<String, dynamic>? additionalData;
+  final bool approved;
 
   const UserModel({
     required this.id,
@@ -20,6 +21,7 @@ class UserModel extends Equatable {
     this.refreshToken,
     this.tokenExpiry,
     this.additionalData,
+    this.approved = false,
   });
 
   /// Check if user has valid authentication tokens
@@ -55,6 +57,7 @@ class UserModel extends Equatable {
     String? refreshToken,
     DateTime? tokenExpiry,
     Map<String, dynamic>? additionalData,
+    bool? approved,
   }) {
     return UserModel(
       id: id ?? this.id,
@@ -65,6 +68,7 @@ class UserModel extends Equatable {
       refreshToken: refreshToken ?? this.refreshToken,
       tokenExpiry: tokenExpiry ?? this.tokenExpiry,
       additionalData: additionalData ?? this.additionalData,
+      approved: approved ?? this.approved,
     );
   }
 
@@ -79,6 +83,7 @@ class UserModel extends Equatable {
       'refreshToken': refreshToken,
       'tokenExpiry': tokenExpiry?.millisecondsSinceEpoch,
       'additionalData': additionalData,
+      'approved': approved,
     };
   }
 
@@ -95,6 +100,7 @@ class UserModel extends Equatable {
           ? DateTime.fromMillisecondsSinceEpoch(json['tokenExpiry'] as int)
           : null,
       additionalData: json['additionalData'] as Map<String, dynamic>?,
+      approved: json['approved'] as bool? ?? false,
     );
   }
 
@@ -108,11 +114,12 @@ class UserModel extends Equatable {
         refreshToken,
         tokenExpiry,
         additionalData,
+        approved,
       ];
 
   @override
   String toString() {
-    return 'UserModel(id: $id, email: $email, name: $name)';
+    return 'UserModel(id: $id, email: $email, name: $name, approved: $approved)';
   }
 }
 

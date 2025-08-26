@@ -2,7 +2,7 @@ import 'package:logger/logger.dart';
 import 'package:flutter/services.dart';
 
 /// Base exception class for all app-specific exceptions
-abstract class AppException implements Exception {
+class AppException implements Exception {
   final String message;
   final String? code;
   final dynamic originalException;
@@ -17,6 +17,16 @@ abstract class AppException implements Exception {
 
   @override
   String toString() => 'AppException: $message${code != null ? ' (Code: $code)' : ''}';
+}
+
+/// Concrete implementation of AppException
+class AppExceptionImpl extends AppException {
+  AppExceptionImpl({
+    required super.message,
+    super.code,
+    super.originalException,
+    super.stackTrace,
+  }) : super();
 }
 
 /// Network-related exceptions
@@ -66,6 +76,11 @@ class AuthException extends AppException {
   factory AuthException.tokenExpired() => const AuthException(
         message: 'Authentication token has expired',
         code: 'TOKEN_EXPIRED',
+      );
+
+  factory AuthException.notApproved() => const AuthException(
+        message: 'Account not approved by admin',
+        code: 'NOT_APPROVED',
       );
 }
 
@@ -247,6 +262,8 @@ class ErrorHandler {
           return 'Sign in failed. Please check your credentials and try again.';
         case 'TOKEN_EXPIRED':
           return 'Your session has expired. Please sign in again.';
+        case 'NOT_APPROVED':
+          return 'Your account is pending admin approval.';
         default:
           return 'Authentication error. Please try again.';
       }
