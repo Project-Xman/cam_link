@@ -3,12 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:get/get.dart';
 import 'package:photo_uploader/firebase_options.dart';
-import 'package:photo_uploader/global_state.dart';
+import 'package:photo_uploader/app/bindings/initial_binding.dart';
+import 'package:photo_uploader/app/core/theme/app_theme.dart';
+import 'package:photo_uploader/app/core/values/app_strings.dart';
+import 'package:photo_uploader/app/routes/app_routes.dart';
 import 'package:photo_uploader/overlay.dart';
-import 'package:photo_uploader/theme.dart';
-import 'package:photo_uploader/util.dart';
-
-import 'file_explorer_screen.dart';
 
 @pragma("vm:entry-point")
 void overlayMain() {
@@ -19,33 +18,40 @@ void overlayMain() {
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  // Load environment variables
   await dotenv.load(fileName: "lib/.env");
 
+  // Initialize Firebase
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
 
-  Get.put(GlobalState(), tag: 'global');
-  runApp(const MyApp());
+  // Run the app
+  runApp(const PhotoUploaderApp());
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+class PhotoUploaderApp extends StatelessWidget {
+  const PhotoUploaderApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return GetMaterialApp(
+      title: AppStrings.appName,
       debugShowCheckedModeBanner: false,
-      title: 'Photo Uploader',
-      theme: buildTheme(context),
-      home: const FileExplorerScreen(),
+      initialBinding: InitialBinding(),
+      theme: AppTheme.lightTheme,
+      darkTheme: AppTheme.darkTheme,
+      themeMode: ThemeMode.system,
+      initialRoute: AppRoutes.home,
+      getPages: AppRoutes.pages,
+      defaultTransition: Transition.cupertino,
+      transitionDuration: const Duration(milliseconds: 300),
+      enableLog: true,
+      logWriterCallback: (text, {bool? isError}) {
+        // Custom logging can be added here
+        debugPrint(text);
+      },
     );
   }
-}
-
-ThemeData buildTheme(BuildContext context) {
-  final brightness = View.of(context).platformDispatcher.platformBrightness;
-  TextTheme textTheme = createTextTheme(context, "Roboto", "Roboto");
-  MaterialTheme theme = MaterialTheme(textTheme);
-  return brightness == Brightness.light ? theme.light() : theme.dark();
 }
