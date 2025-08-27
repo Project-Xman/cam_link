@@ -11,6 +11,7 @@ import '../../data/services/google_drive_service.dart';
 import '../../data/services/google_oauth_service.dart';
 import '../../core/errors/app_exception.dart';
 import '../../core/values/app_strings.dart';
+import '../../data/services/appwrite_auth_service.dart';
 
 /// File Explorer Controller using GetX patterns
 class FileExplorerController extends GetxController {
@@ -20,6 +21,7 @@ class FileExplorerController extends GetxController {
   late final ImageProcessingService _imageProcessingService;
   late final GoogleDriveService _googleDriveService;
   late final AuthService _authService;
+  late final AppwriteAuthService _appwriteAuthService;
 
   // Observable state
   final selectedPath = ''.obs;
@@ -48,6 +50,10 @@ class FileExplorerController extends GetxController {
   DirectoryWatcher? _directoryWatcher;
   StreamSubscription? _watcherSubscription;
 
+  // Getters for auth services
+  AuthService get authService => _authService;
+  AppwriteAuthService get appwriteAuthService => _appwriteAuthService;
+
   @override
   void onInit() {
     super.onInit();
@@ -65,6 +71,7 @@ class FileExplorerController extends GetxController {
     _imageProcessingService = ImageProcessingService.to;
     _googleDriveService = GoogleDriveService.to;
     _authService = AuthService.to;
+    _appwriteAuthService = AppwriteAuthService.to;
   }
 
   /// Select a folder to monitor
@@ -167,10 +174,10 @@ class FileExplorerController extends GetxController {
   Future<void> startWatching() async {
     if (selectedPath.value.isEmpty) {
       Get.showSnackbar(
-        GetSnackBar(
+        const GetSnackBar(
           title: AppStrings.error,
           message: AppStrings.noFolderSelected,
-          duration: const Duration(seconds: 2),
+          duration: Duration(seconds: 2),
         ),
       );
       return;
@@ -198,326 +205,53 @@ class FileExplorerController extends GetxController {
       Get.showSnackbar(
         GetSnackBar(
           title: AppStrings.error,
-          message: 'Failed to start watching: $e',
+          message: e.toString(),
           duration: const Duration(seconds: 3),
         ),
       );
     }
   }
 
-  /// Stop watching the directory
+  /// Stop watching the selected directory
   Future<void> stopWatching() async {
-    await _watcherSubscription?.cancel();
-    _watcherSubscription = null;
+    _watcherSubscription?.cancel();
     _directoryWatcher = null;
     isWatching.value = false;
   }
 
-  /// Handle file system events
-  void _handleFileSystemEvent(WatchEvent event) {
-    if (event.type == ChangeType.ADD || event.type == ChangeType.MODIFY) {
-      // Check if it's an image file
-      final extension = path.extension(event.path).toLowerCase();
-      if (['.jpg', '.jpeg', '.png', '.bmp', '.webp'].contains(extension)) {
-        _addFileToProcess(event.path);
-      }
-    } else if (event.type == ChangeType.REMOVE) {
-      _removeFileFromProcess(event.path);
-    }
-  }
-
-  /// Add file to processing queue
-  void _addFileToProcess(String filePath) {
-    fileStatusMap[filePath] = FileStatusModel(
-      filePath: filePath,
-      processStatus: ProcessStatus.notStarted,
-      uploadStatus: UploadStatus.notSynced,
-      uploadProgress: 0.0,
-    );
-    
-    imagesDetected.value++;
-    refreshFileList();
-    
-    // Auto-process if conditions are met
-    if (cloudFolderCreated.value) {
-      processFile(filePath);
-    }
-  }
-
-  /// Remove file from processing
-  void _removeFileFromProcess(String filePath) {
-    fileStatusMap.remove(filePath);
-    refreshFileList();
-  }
-
-  /// Process a single file
-  Future<void> processFile(String filePath) async {
-    if (folderNameController.value.isEmpty) {
-      Get.showSnackbar(
-        GetSnackBar(
-          title: AppStrings.error,
-          message: 'Cloud folder not created',
-          duration: const Duration(seconds: 2),
-        ),
-      );
-      return;
-    }
-
-    try {
-      // Update status to processing
-      final currentStatus = fileStatusMap[filePath];
-      if (currentStatus != null) {
-        fileStatusMap[filePath] = currentStatus.copyWith(
-          processStatus: ProcessStatus.processing,
-        );
-      }
-
-      String? localOutputPath;
-      if (saveOutputToDevice.value && outputPath.value.isNotEmpty) {
-        localOutputPath = path.join(outputPath.value, path.basename(filePath));
-      }
-
-      // Process the image
-      await _imageProcessingService.processFile(
-        filePath: filePath,
-        logoPath: selectedOverlayImage.value,
-        outputPath: localOutputPath,
-        resolutionHeight: resolutionHeight.value,
-        resolutionWidth: resolutionWidth.value,
-        saveOutputToDevice: saveOutputToDevice.value,
-        onProcessed: (status, outputPath, imageBytes) async {
-          await _onFileProcessed(filePath, status, outputPath, imageBytes);
-        },
-      );
-    } catch (e) {
-      ErrorHandler.handleError(e, context: 'FileExplorerController.processFile');
-      
-      // Update status to failed
-      final currentStatus = fileStatusMap[filePath];
-      if (currentStatus != null) {
-        fileStatusMap[filePath] = currentStatus.copyWith(
-          processStatus: ProcessStatus.failed,
-        );
-      }
-    }
-  }
-
-  /// Handle file processing completion
-  Future<void> _onFileProcessed(
-    String filePath,
-    ProcessStatus status,
-    String? localOutputPath,
-    Uint8List? imageBytes,
-  ) async {
-    // Update process status
-    final currentStatus = fileStatusMap[filePath];
-    if (currentStatus != null) {
-      fileStatusMap[filePath] = currentStatus.copyWith(
-        processStatus: status,
-      );
-    }
-
-    if (status == ProcessStatus.processed) {
-      imagesProcessed.value++;
-      
-      // Upload to Google Drive
-      if (saveOutputToDevice.value && localOutputPath != null) {
-        await _uploadFileToDrive(localOutputPath, filePath);
-      } else if (imageBytes != null) {
-        await _uploadBytesToDrive(imageBytes, filePath);
-      }
-    }
-  }
-
-  /// Upload file to Google Drive
-  Future<void> _uploadFileToDrive(String localPath, String originalPath) async {
-    try {
-      // Update status to uploading
-      final currentStatus = fileStatusMap[originalPath];
-      if (currentStatus != null) {
-        fileStatusMap[originalPath] = currentStatus.copyWith(
-          uploadStatus: UploadStatus.uploading,
-          uploadProgress: 0.0,
-        );
-      }
-
-      final file = File(localPath);
-      final uploadStatus = await _googleDriveService.uploadFileToGoogleDrive(
-        folderNameController.value,
-        file,
-        (progress) {
-          // Update progress
-          final progressStatus = fileStatusMap[originalPath];
-          if (progressStatus != null) {
-            fileStatusMap[originalPath] = progressStatus.copyWith(
-              uploadProgress: progress,
-            );
-          }
-        },
-      );
-
-      // Update final status
-      final finalStatus = fileStatusMap[originalPath];
-      if (finalStatus != null) {
-        fileStatusMap[originalPath] = finalStatus.copyWith(
-          uploadStatus: uploadStatus,
-          uploadProgress: uploadStatus == UploadStatus.uploadSuccess ? 1.0 : 0.0,
-        );
-      }
-
-      if (uploadStatus == UploadStatus.uploadSuccess) {
-        imagesUploaded.value++;
-      }
-    } catch (e) {
-      ErrorHandler.handleError(e, context: 'FileExplorerController._uploadFileToDrive');
-      
-      // Update status to failed
-      final currentStatus = fileStatusMap[originalPath];
-      if (currentStatus != null) {
-        fileStatusMap[originalPath] = currentStatus.copyWith(
-          uploadStatus: UploadStatus.uploadFailed,
-        );
-      }
-    }
-  }
-
-  /// Upload bytes to Google Drive
-  Future<void> _uploadBytesToDrive(Uint8List bytes, String originalPath) async {
-    try {
-      // Update status to uploading
-      final currentStatus = fileStatusMap[originalPath];
-      if (currentStatus != null) {
-        fileStatusMap[originalPath] = currentStatus.copyWith(
-          uploadStatus: UploadStatus.uploading,
-          uploadProgress: 0.0,
-        );
-      }
-
-      final fileName = path.basename(originalPath);
-      final uploadStatus = await _googleDriveService.uploadBytesToGoogleDrive(
-        folderNameController.value,
-        bytes,
-        fileName,
-        (progress) {
-          // Update progress
-          final progressStatus2 = fileStatusMap[originalPath];
-          if (progressStatus2 != null) {
-            fileStatusMap[originalPath] = progressStatus2.copyWith(
-              uploadProgress: progress,
-            );
-          }
-        },
-      );
-
-      // Update final status
-      final finalStatus2 = fileStatusMap[originalPath];
-      if (finalStatus2 != null) {
-        fileStatusMap[originalPath] = finalStatus2.copyWith(
-          uploadStatus: uploadStatus,
-          uploadProgress: uploadStatus == UploadStatus.uploadSuccess ? 1.0 : 0.0,
-        );
-      }
-
-      if (uploadStatus == UploadStatus.uploadSuccess) {
-        imagesUploaded.value++;
-      }
-    } catch (e) {
-      ErrorHandler.handleError(e, context: 'FileExplorerController._uploadBytesToDrive');
-      
-      // Update status to failed
-      final currentStatus = fileStatusMap[originalPath];
-      if (currentStatus != null) {
-        fileStatusMap[originalPath] = currentStatus.copyWith(
-          uploadStatus: UploadStatus.uploadFailed,
-        );
-      }
-    }
-  }
-
-  /// Create cloud folder
-  Future<void> createCloudFolder() async {
-    if (folderNameController.value.isEmpty) {
-      Get.showSnackbar(
-        GetSnackBar(
-          title: AppStrings.error,
-          message: 'Please enter a folder name',
-          duration: const Duration(seconds: 2),
-        ),
-      );
-      return;
-    }
-
-    try {
-      final now = DateTime.now();
-      final formattedDate = '${now.day.toString().padLeft(2, '0')}.${now.month.toString().padLeft(2, '0')}.${now.year}';
-      final finalFolderName = '$formattedDate ${folderNameController.value}';
-      
-      final success = await _googleDriveService.createFolder(finalFolderName);
-      
-      if (success) {
-        folderNameController.value = finalFolderName;
-        cloudFolderCreated.value = true;
-        
-        Get.showSnackbar(
-          GetSnackBar(
-            title: AppStrings.success,
-            message: AppStrings.cloudFolderCreated,
-            duration: const Duration(seconds: 2),
-          ),
-        );
-      } else {
-        Get.showSnackbar(
-          GetSnackBar(
-            title: AppStrings.error,
-            message: AppStrings.cloudFolderCreateFailed,
-            duration: const Duration(seconds: 3),
-          ),
-        );
-      }
-    } catch (e) {
-      ErrorHandler.handleError(e, context: 'FileExplorerController.createCloudFolder');
-      Get.showSnackbar(
-        GetSnackBar(
-          title: AppStrings.error,
-          message: 'Failed to create folder: $e',
-          duration: const Duration(seconds: 3),
-        ),
-      );
-    }
-  }
-
-  /// Refresh file list
+  /// Refresh the file list
   Future<void> refreshFileList() async {
     if (selectedPath.value.isEmpty) return;
 
     try {
       final directory = Directory(selectedPath.value);
-      final entities = await directory.list().toList();
-      
-      fileList.value = entities
-          .whereType<File>()
-          .map((entity) => entity.path)
-          .where((path) {
-            final extension = path.split('.').last.toLowerCase();
-            return ['jpg', 'jpeg', 'png', 'bmp', 'webp'].contains(extension);
-          })
-          .toList();
+      if (!await directory.exists()) return;
+
+      final files = directory.listSync(recursive: false);
+      final imageFiles = <String>[];
+
+      for (final file in files) {
+        if (file is File) {
+          final extension = path.extension(file.path).toLowerCase();
+          if (extension == '.jpg' || extension == '.jpeg' || extension == '.png') {
+            imageFiles.add(file.path);
+          }
+        }
+      }
+
+      fileList.value = imageFiles;
+      imagesDetected.value = imageFiles.length;
     } catch (e) {
-      ErrorHandler.handleError(e, context: 'FileExplorerController._refreshFileList');
+      ErrorHandler.handleError(e, context: 'FileExplorerController.refreshFileList');
     }
   }
 
-  /// Reset all statistics
-  void resetStatistics() {
-    imagesDetected.value = 0;
-    imagesProcessed.value = 0;
-    imagesUploaded.value = 0;
-    fileStatusMap.clear();
-  }
-
-  /// Get file status for a specific file
-  FileStatusModel? getFileStatus(String filePath) {
-    return fileStatusMap[filePath];
+  /// Handle file system events
+  void _handleFileSystemEvent(WatchEvent event) {
+    // Debounce file system events to avoid processing the same file multiple times
+    Future.delayed(const Duration(milliseconds: 100), () {
+      refreshFileList();
+    });
   }
 
   /// Update resolution settings
@@ -529,5 +263,194 @@ class FileExplorerController extends GetxController {
   /// Toggle save to device setting
   void toggleSaveToDevice() {
     saveOutputToDevice.value = !saveOutputToDevice.value;
+  }
+
+  /// Create cloud folder
+  Future<void> createCloudFolder() async {
+    if (folderNameController.value.isEmpty) {
+      Get.showSnackbar(
+        const GetSnackBar(
+          title: AppStrings.error,
+          message: 'Please enter a folder name',
+          duration: Duration(seconds: 2),
+        ),
+      );
+      return;
+    }
+
+    try {
+      final success = await _googleDriveService.createFolder(folderNameController.value);
+      if (success) {
+        cloudFolderCreated.value = true;
+        Get.showSnackbar(
+          const GetSnackBar(
+            title: AppStrings.success,
+            message: 'Cloud folder created successfully',
+            duration: Duration(seconds: 2),
+          ),
+        );
+      } else {
+        throw Exception('Failed to create cloud folder');
+      }
+    } catch (e) {
+      ErrorHandler.handleError(e, context: 'FileExplorerController.createCloudFolder');
+      Get.showSnackbar(
+        GetSnackBar(
+          title: AppStrings.error,
+          message: e.toString(),
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    }
+  }
+
+  /// Process all images in the selected folder
+  Future<void> processAllImages() async {
+    if (fileList.isEmpty) {
+      Get.showSnackbar(
+        const GetSnackBar(
+          title: AppStrings.success,
+          message: 'No images to process',
+          duration: Duration(seconds: 2),
+        ),
+      );
+      return;
+    }
+
+    try {
+      for (final filePath in fileList) {
+        await processImage(filePath);
+      }
+      
+      Get.showSnackbar(
+        const GetSnackBar(
+          title: AppStrings.success,
+          message: 'All images processed successfully',
+          duration: Duration(seconds: 2),
+        ),
+      );
+    } catch (e) {
+      ErrorHandler.handleError(e, context: 'FileExplorerController.processAllImages');
+      Get.showSnackbar(
+        GetSnackBar(
+          title: AppStrings.error,
+          message: e.toString(),
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    }
+  }
+
+  /// Process a single image
+  Future<void> processImage(String filePath) async {
+    try {
+      // Update file status
+      final fileName = path.basename(filePath);
+      fileStatusMap[fileName] = FileStatusModel(
+        filePath: filePath,
+        processStatus: ProcessStatus.processing,
+        uploadStatus: UploadStatus.notSynced,
+      );
+
+      // Process image
+      final outputFileName = '${path.basenameWithoutExtension(filePath)}_processed${path.extension(filePath)}';
+      final outputPathFull = outputPath.value.isNotEmpty 
+          ? path.join(outputPath.value, outputFileName) 
+          : null;
+
+      await _imageProcessingService.processFile(
+        filePath: filePath,
+        logoPath: selectedOverlayImage.value,
+        outputPath: outputPathFull,
+        resolutionHeight: resolutionHeight.value,
+        resolutionWidth: resolutionWidth.value,
+        saveOutputToDevice: saveOutputToDevice.value,
+        onProcessed: (ProcessStatus status, String? localOutputPath, Uint8List? imageBytes) async {
+          // Update file status based on processing result
+          fileStatusMap[fileName] = fileStatusMap[fileName]!.copyWith(
+            processStatus: status,
+            processedAt: DateTime.now(),
+          );
+
+          if (status == ProcessStatus.processed && imageBytes != null) {
+            // Upload to cloud if authenticated and platform is supported
+            if (_authService.isSignedIn && _googleDriveService.platformSupported.value) {
+              // Update status to uploading
+              fileStatusMap[fileName] = fileStatusMap[fileName]!.copyWith(
+                uploadStatus: UploadStatus.uploading,
+              );
+
+              try {
+                final uploadStatus = await _googleDriveService.uploadBytesToGoogleDrive(
+                  folderNameController.value.isEmpty ? 'PhotoUploader' : folderNameController.value,
+                  imageBytes,
+                  outputFileName,
+                  (progress) {
+                    // Update upload progress
+                    fileStatusMap[fileName] = fileStatusMap[fileName]!.copyWith(
+                      uploadProgress: progress,
+                    );
+                  },
+                );
+
+                // Update final upload status
+                fileStatusMap[fileName] = fileStatusMap[fileName]!.copyWith(
+                  uploadStatus: uploadStatus,
+                  uploadedAt: DateTime.now(),
+                );
+
+                if (uploadStatus == UploadStatus.uploadSuccess) {
+                  imagesUploaded.value++;
+                }
+              } catch (e) {
+                // Update status to upload failed
+                fileStatusMap[fileName] = fileStatusMap[fileName]!.copyWith(
+                  uploadStatus: UploadStatus.uploadFailed,
+                  errorMessage: e.toString(),
+                );
+              }
+            }
+
+            imagesProcessed.value++;
+          } else if (status == ProcessStatus.failed) {
+            // Update status to failed
+            fileStatusMap[fileName] = fileStatusMap[fileName]!.copyWith(
+              processStatus: ProcessStatus.failed,
+              errorMessage: 'Failed to process image',
+            );
+          }
+        },
+      );
+    } catch (e) {
+      // Update file status to error
+      final fileName = path.basename(filePath);
+      fileStatusMap[fileName] = FileStatusModel(
+        filePath: filePath,
+        processStatus: ProcessStatus.failed,
+        uploadStatus: UploadStatus.notSynced,
+        errorMessage: e.toString(),
+      );
+      
+      ErrorHandler.handleError(e, context: 'FileExplorerController.processImage');
+    }
+  }
+  
+  /// Get file status for a specific file path
+  FileStatusModel? getFileStatus(String filePath) {
+    final fileName = path.basename(filePath);
+    return fileStatusMap[fileName];
+  }
+  
+  /// Process a specific file (alias for processImage)
+  Future<void> processFile(String filePath) async {
+    return processImage(filePath);
+  }
+  
+  /// Reset statistics
+  void resetStatistics() {
+    imagesDetected.value = 0;
+    imagesProcessed.value = 0;
+    imagesUploaded.value = 0;
+    fileStatusMap.clear();
   }
 }

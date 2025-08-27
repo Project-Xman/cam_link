@@ -1,25 +1,49 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../controllers/auth_controller.dart';
-import '../../../core/values/app_strings.dart';
+
 import '../../../core/values/app_values.dart';
+import '../../../data/services/appwrite_auth_service.dart';
 
 class LoginPage extends GetView<AuthController> {
   const LoginPage({super.key});
 
   @override
   Widget build(BuildContext context) {
+    // Check if user is already authenticated and approved
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final auth = AppwriteAuthService.to;
+      if (auth.isAuthenticated) {
+        final approved = await auth.isUserApproved();
+        if (approved) {
+          // User is authenticated and approved - route to home page
+          Get.offAllNamed('/home');
+        } else {
+          // User is authenticated but not approved - route to admin approval page
+          Get.offAllNamed('/auth/admin-approval');
+        }
+      }
+    });
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Sign In'),
         backgroundColor: Theme.of(context).colorScheme.surface,
         foregroundColor: Theme.of(context).colorScheme.onSurface,
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(AppValues.paddingLarge),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(AppValues.paddingLarge),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              minHeight: MediaQuery.of(context).size.height - 
+                         MediaQuery.of(context).padding.top - 
+                         MediaQuery.of(context).padding.bottom - 
+                         kToolbarHeight,
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
             // App Logo
             Icon(
               Icons.account_circle_outlined,
@@ -62,8 +86,8 @@ class LoginPage extends GetView<AuthController> {
               controller: controller.passwordController,
               decoration: const InputDecoration(
                 labelText: 'Password',
-                border: const OutlineInputBorder(),
-                prefixIcon: const Icon(Icons.lock_outlined),
+                border: OutlineInputBorder(),
+                prefixIcon: Icon(Icons.lock_outlined),
               ),
               obscureText: true,
             ),
@@ -103,6 +127,8 @@ class LoginPage extends GetView<AuthController> {
               ],
             ),
           ],
+        ),
+          ),
         ),
       ),
     );

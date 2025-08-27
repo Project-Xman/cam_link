@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../controllers/auth_controller.dart';
-import '../../../core/values/app_strings.dart';
 import '../../../core/values/app_values.dart';
 
 class ForgotPasswordPage extends GetView<AuthController> {

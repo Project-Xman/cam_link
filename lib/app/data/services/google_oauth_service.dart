@@ -203,7 +203,7 @@ class AuthService extends GetxService {
       ErrorHandler.logError('PlatformException during Google Sign In', error: e, context: 'AuthService._signInWithGoogleNative');
       final diagnostics = PlatformDiagnosticsService.to;
       diagnostics.logPlatformChannelError('google_sign_in', e);
-      if (e is PlatformException) rethrow;
+      rethrow;
       throw AuthException.signInFailed('Native sign in failed: $e');
     } catch (e) {
       if (e is AuthException) rethrow;
@@ -248,7 +248,7 @@ class AuthService extends GetxService {
           'grant_type': 'authorization_code',
           'code_verifier': codeVerifier,
         },
-      ).timeout(Duration(seconds: AppValues.networkTimeoutSeconds));
+      ).timeout(const Duration(seconds: AppValues.networkTimeoutSeconds));
 
       if (response.statusCode != 200) {
         throw AuthException.signInFailed('Token exchange failed: ${response.body}');
@@ -343,7 +343,7 @@ class AuthService extends GetxService {
         'refresh_token': refreshToken,
         'grant_type': 'refresh_token',
       },
-    ).timeout(Duration(seconds: AppValues.networkTimeoutSeconds));
+    ).timeout(const Duration(seconds: AppValues.networkTimeoutSeconds));
 
     if (response.statusCode != 200) {
       await signOut();
@@ -365,7 +365,7 @@ class AuthService extends GetxService {
       final response = await http.get(
         Uri.parse('https://www.googleapis.com/oauth2/v3/userinfo'),
         headers: {'Authorization': 'Bearer $accessToken'},
-      ).timeout(Duration(seconds: AppValues.networkTimeoutSeconds));
+      ).timeout(const Duration(seconds: AppValues.networkTimeoutSeconds));
 
       if (response.statusCode != 200) {
         throw AuthException.signInFailed('Failed to get user info');

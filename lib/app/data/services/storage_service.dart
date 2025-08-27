@@ -254,12 +254,14 @@ class StorageService extends GetxService {
 
   /// Get processing settings
   Map<String, dynamic> getProcessingSettings() {
-    if (_box == null) return {
+    if (_box == null) {
+      return {
       'width': AppValues.defaultImageWidth,
       'height': AppValues.defaultImageHeight,
       'saveToDevice': false,
       'overlayImagePath': null,
     };
+    }
     
     try {
       return _box!.read<Map<String, dynamic>>('processing_settings') ?? {

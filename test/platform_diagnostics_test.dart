@@ -2,7 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:mockito/mockito.dart';
 import 'package:mockito/annotations.dart';
-import '../lib/app/data/services/platform_diagnostics_service.dart';
+import 'package:photo_uploader/app/data/services/platform_diagnostics_service.dart';
 
 // Generate mocks
 @GenerateMocks([])

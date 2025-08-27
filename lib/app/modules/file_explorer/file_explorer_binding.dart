@@ -15,9 +15,12 @@ class FileExplorerBinding extends Bindings {
     
     // Register GoogleDriveService if not already registered
     if (!Get.isRegistered<GoogleDriveService>()) {
-      // Get the already initialized AuthService
-      final authService = Get.find<AuthService>();
-      Get.put(GoogleDriveService(authService: authService));
+      Get.put(GoogleDriveService());
+    }
+    
+    // Register AuthService if not already registered
+    if (!Get.isRegistered<AuthService>()) {
+      Get.put(AuthService());
     }
     
     Get.lazyPut<FileExplorerController>(

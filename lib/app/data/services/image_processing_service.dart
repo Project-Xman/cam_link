@@ -97,7 +97,7 @@ class ImageProcessingService extends GetxService {
       });
 
       return await completer.future.timeout(
-        Duration(seconds: AppValues.uploadTimeoutSeconds),
+        const Duration(seconds: AppValues.uploadTimeoutSeconds),
         onTimeout: () {
           throw ImageProcessingException.processingFailed('Processing timeout');
         },

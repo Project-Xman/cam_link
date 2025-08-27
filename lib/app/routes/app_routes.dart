@@ -12,6 +12,9 @@ import '../modules/auth/pages/signup_page.dart';
 import '../modules/auth/pages/forgot_password_page.dart';
 import '../modules/auth/pages/admin_approval_page.dart';
 import '../modules/auth/auth_binding.dart';
+import '../modules/home/views/qr_code_form_page.dart';
+import '../modules/home/qr_code_binding.dart';
+import '../core/middleware/approval_middleware.dart';
 
 /// App routes configuration
 class AppRoutes {
@@ -23,6 +26,7 @@ class AppRoutes {
   static const String signup = '/auth/signup';
   static const String forgotPassword = '/auth/forgot-password';
   static const String adminApproval = '/auth/admin-approval';
+  static const String qrCodeForm = '/qr-code-form';
   static const String settings = '/settings';
   static const String about = '/about';
 
@@ -39,6 +43,7 @@ class AppRoutes {
       page: () => const HomePage(),
       binding: HomeBinding(),
       transition: Transition.cupertino,
+      middlewares: [ApprovalMiddleware()],
     ),
     GetPage(
       name: fileExplorer,
@@ -77,6 +82,13 @@ class AppRoutes {
       binding: AuthBinding(),
       transition: Transition.cupertino,
     ),
+    GetPage(
+      name: qrCodeForm,
+      page: () => const QRCodeFormPage(),
+      binding: QRCodeBinding(),
+      transition: Transition.cupertino,
+      middlewares: [ApprovalMiddleware()],
+    ),
   ];
 
   /// Navigation methods
@@ -88,6 +100,7 @@ class AppRoutes {
   static void toSignup() => Get.toNamed(signup);
   static void toForgotPassword() => Get.toNamed(forgotPassword);
   static void toAdminApproval() => Get.offAllNamed(adminApproval);
+  static void toQRCodeForm() => Get.toNamed(qrCodeForm);
   static void back() => Get.back();
 
   /// Check if current route matches
@@ -99,4 +112,5 @@ class AppRoutes {
   static bool get isSignup => Get.currentRoute == signup;
   static bool get isForgotPassword => Get.currentRoute == forgotPassword;
   static bool get isAdminApproval => Get.currentRoute == adminApproval;
+  static bool get isQRCodeForm => Get.currentRoute == qrCodeForm;
 }

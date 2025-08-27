@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/values/app_strings.dart';
 import '../../controllers/app_controller.dart';
 import '../../data/services/google_oauth_service.dart';
 import '../../data/services/storage_service.dart';
 import '../../data/services/connectivity_service.dart';
-import '../../data/services/supabase_auth_service.dart';
+import '../../data/services/appwrite_auth_service.dart';
 import '../../routes/app_routes.dart';
 
 /// Splash screen to initialize app services
@@ -64,7 +63,7 @@ class _SplashPageState extends State<SplashPage> {
         final storageService = Get.find<StorageService>();
         final connectivityService = Get.find<ConnectivityService>();
         final authService = Get.find<AuthService>();
-        final supabaseAuthService = Get.find<SupabaseAuthService>();
+        final appwriteAuthService = Get.find<AppwriteAuthService>();
         final appController = Get.find<AppController>();
         
         // If we get here, all services are available
@@ -84,24 +83,24 @@ class _SplashPageState extends State<SplashPage> {
   Future<void> _checkAuthStatus() async {
     if (mounted) {
       try {
-        // Check Supabase auth status
-        final supabaseAuth = Supabase.instance.client.auth;
-        final session = supabaseAuth.currentSession;
+        // Check Appwrite auth status
+        final appwriteAuth = AppwriteAuthService.to;
         
-        if (session != null) {
-          // Check if user is approved
-          final supabaseAuthService = Get.find<SupabaseAuthService>();
-          final approved = await supabaseAuthService.isUserApproved();
+        if (appwriteAuth.isAuthenticated) {
+          // User is authenticated, check approval status
+          final currentUser = appwriteAuth.currentUser;
           
-          if (approved) {
-            // User is authenticated and approved
+          // In a real implementation, you would check a custom user status field
+          // For now, we'll use the approved field from the UserModel
+          if (currentUser != null && currentUser.approved) {
+            // User is authenticated and approved - route to home page
             AppRoutes.toHome();
           } else {
-            // User is authenticated but not approved
+            // User is authenticated but not approved - route to admin approval page
             AppRoutes.toAdminApproval();
           }
         } else {
-          // User is not authenticated
+          // User is not authenticated - route to login page
           AppRoutes.toLogin();
         }
       } catch (e) {
@@ -127,7 +126,7 @@ class _SplashPageState extends State<SplashPage> {
             ],
           ),
         ),
-        child: Column(
+        child: const Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             // App logo or icon
@@ -136,9 +135,9 @@ class _SplashPageState extends State<SplashPage> {
               size: 80,
               color: Colors.white,
             ),
-            const SizedBox(height: 20),
+            SizedBox(height: 20),
             // App name
-            const Text(
+            Text(
               AppStrings.appName,
               style: TextStyle(
                 fontSize: 24,
@@ -146,13 +145,13 @@ class _SplashPageState extends State<SplashPage> {
                 color: Colors.white,
               ),
             ),
-            const SizedBox(height: 30),
+            SizedBox(height: 30),
             // Loading indicator
-            const CircularProgressIndicator(
+            CircularProgressIndicator(
               valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
             ),
-            const SizedBox(height: 20),
-            const Text(
+            SizedBox(height: 20),
+            Text(
               'Initializing...',
               style: TextStyle(
                 fontSize: 16,

@@ -5,6 +5,7 @@ import 'package:path/path.dart' as path;
 import '../file_explorer/file_explorer_controller.dart';
 import '../../core/values/app_strings.dart';
 import '../../core/values/app_values.dart';
+import '../../data/services/appwrite_auth_service.dart';
 
 class SettingsPage extends GetView<FileExplorerController> {
   const SettingsPage({super.key});
@@ -16,12 +17,31 @@ class SettingsPage extends GetView<FileExplorerController> {
         title: const Text('Settings'),
         backgroundColor: Theme.of(context).colorScheme.surface,
         foregroundColor: Theme.of(context).colorScheme.onSurface,
+        actions: [
+          // Add user profile and logout actions
+          IconButton(
+            icon: const Icon(Icons.account_circle),
+            onPressed: _showUserProfile,
+            tooltip: 'User Profile',
+          ),
+          IconButton(
+            icon: const Icon(Icons.logout),
+            onPressed: _logout,
+            tooltip: 'Logout',
+          ),
+        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(AppValues.paddingMedium),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // User Profile Section
+            _buildSectionHeader(context, 'User Profile'),
+            _buildUserProfileCard(context),
+            
+            const SizedBox(height: AppValues.paddingLarge),
+            
             // Folder Settings Section
             _buildSectionHeader(context, 'Folder Settings'),
             _buildFolderSettingsCard(context),
@@ -57,6 +77,104 @@ class SettingsPage extends GetView<FileExplorerController> {
         style: Theme.of(context).textTheme.titleLarge?.copyWith(
           fontWeight: FontWeight.bold,
         ),
+      ),
+    );
+  }
+
+  Widget _buildUserProfileCard(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    
+    return Card(
+      elevation: 0,
+      color: colorScheme.surfaceContainerLow,
+      child: Padding(
+        padding: const EdgeInsets.all(AppValues.paddingMedium),
+        child: Obx(() {
+          // Get current user from Appwrite auth service
+          final currentUser = AppwriteAuthService.to.currentUser;
+          
+          if (currentUser != null) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    CircleAvatar(
+                      radius: 30,
+                      backgroundColor: colorScheme.primaryContainer,
+                      child: Text(
+                        currentUser.initials,
+                        style: TextStyle(
+                          color: colorScheme.onPrimaryContainer,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: AppValues.paddingMedium),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            currentUser.displayName,
+                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            currentUser.email,
+                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              color: colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: AppValues.paddingMedium),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: _showUserProfileDetails,
+                        icon: const Icon(Icons.info_outline),
+                        label: const Text('View Details'),
+                      ),
+                    ),
+                    const SizedBox(width: AppValues.paddingMedium),
+                    Expanded(
+                      child: FilledButton.icon(
+                        onPressed: _logout,
+                        icon: const Icon(Icons.logout),
+                        label: const Text('Logout'),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            );
+          } else {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Not signed in',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: AppValues.paddingMedium),
+                FilledButton.icon(
+                  onPressed: _login,
+                  icon: const Icon(Icons.login),
+                  label: const Text('Sign In'),
+                ),
+              ],
+            );
+          }
+        }),
       ),
     );
   }
@@ -165,35 +283,8 @@ class SettingsPage extends GetView<FileExplorerController> {
               ),
             ),
             const SizedBox(height: AppValues.paddingSmall),
-            Row(
-              children: [
-                Expanded(
-                  child: Obx(() => TextField(
-                    controller: TextEditingController(
-                      text: controller.folderNameController.value,
-                    ),
-                    decoration: const InputDecoration(
-                      hintText: 'Enter folder name',
-                      border: OutlineInputBorder(),
-                    ),
-                    onChanged: (value) {
-                      controller.folderNameController.value = value;
-                    },
-                  )),
-                ),
-                const SizedBox(width: AppValues.paddingSmall),
-                Obx(() => FilledButton(
-                  onPressed: controller.cloudFolderCreated.value
-                      ? null
-                      : controller.createCloudFolder,
-                  child: Text(
-                    controller.cloudFolderCreated.value
-                        ? 'Created'
-                        : 'Create',
-                  ),
-                )),
-              ],
-            ),
+            // Use a stateful widget to properly manage the text controller
+            _CloudFolderNameField(controller: controller),
             const SizedBox(height: AppValues.paddingMedium),
             Obx(() => Text(
               controller.cloudFolderCreated.value
@@ -356,6 +447,175 @@ class SettingsPage extends GetView<FileExplorerController> {
           ],
         );
       },
+    );
+  }
+
+  // User profile and logout methods
+  void _showUserProfile() {
+    final currentUser = AppwriteAuthService.to.currentUser;
+    if (currentUser != null) {
+      Get.defaultDialog(
+        title: 'User Profile',
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            CircleAvatar(
+              radius: 40,
+              backgroundColor: Get.theme.colorScheme.primaryContainer,
+              child: Text(
+                currentUser.initials,
+                style: TextStyle(
+                  color: Get.theme.colorScheme.onPrimaryContainer,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 24,
+                ),
+              ),
+            ),
+            const SizedBox(height: AppValues.paddingMedium),
+            Text(
+              currentUser.name,
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 18,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              currentUser.email,
+              style: const TextStyle(
+                color: Colors.grey,
+              ),
+            ),
+            const SizedBox(height: AppValues.paddingMedium),
+            Text(
+              'User ID: ${currentUser.id}',
+              style: const TextStyle(
+                fontSize: 12,
+                color: Colors.grey,
+              ),
+            ),
+            if (currentUser.approved) ...[
+              const SizedBox(height: AppValues.paddingSmall),
+              const Text(
+                'Status: Approved',
+                style: TextStyle(
+                  color: Colors.green,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ] else ...[
+              const SizedBox(height: AppValues.paddingSmall),
+              const Text(
+                'Status: Pending Approval',
+                style: TextStyle(
+                  color: Colors.orange,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ],
+        ),
+        textConfirm: 'Close',
+        confirm: ElevatedButton(
+          onPressed: () => Get.back(),
+          child: const Text('Close'),
+        ),
+      );
+    } else {
+      Get.snackbar(
+        'Error',
+        'No user data available',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    }
+  }
+
+  void _showUserProfileDetails() {
+    _showUserProfile(); // Reuse the same method
+  }
+
+  void _login() {
+    Get.toNamed('/auth/login');
+  }
+
+  void _logout() {
+    Get.defaultDialog(
+      title: 'Logout',
+      middleText: 'Are you sure you want to logout?',
+      confirm: FilledButton(
+        onPressed: () {
+          // Perform logout through Appwrite auth service
+          AppwriteAuthService.to.signOut();
+          Get.back(); // Close dialog
+          Get.offAllNamed('/auth/login'); // Navigate to login
+        },
+        child: const Text('Logout'),
+      ),
+      cancel: OutlinedButton(
+        onPressed: () => Get.back(), // Close dialog
+        child: const Text('Cancel'),
+      ),
+    );
+  }
+}
+
+// Separate widget to properly manage the text controller lifecycle
+class _CloudFolderNameField extends StatefulWidget {
+  final FileExplorerController controller;
+
+  const _CloudFolderNameField({required this.controller});
+
+  @override
+  State<_CloudFolderNameField> createState() => _CloudFolderNameFieldState();
+}
+
+class _CloudFolderNameFieldState extends State<_CloudFolderNameField> {
+  late final TextEditingController _textController;
+
+  @override
+  void initState() {
+    super.initState();
+    _textController = TextEditingController(
+      text: widget.controller.folderNameController.value,
+    );
+    
+    // Listen to changes in the controller's value
+    _textController.addListener(() {
+      widget.controller.folderNameController.value = _textController.text;
+    });
+  }
+
+  @override
+  void dispose() {
+    _textController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: TextField(
+            controller: _textController,
+            decoration: const InputDecoration(
+              hintText: 'Enter folder name',
+              border: OutlineInputBorder(),
+            ),
+          ),
+        ),
+        const SizedBox(width: AppValues.paddingSmall),
+        Obx(() => FilledButton(
+          onPressed: widget.controller.cloudFolderCreated.value
+              ? null
+              : widget.controller.createCloudFolder,
+          child: Text(
+            widget.controller.cloudFolderCreated.value
+                ? 'Created'
+                : 'Create',
+          ),
+        )),
+      ],
     );
   }
 }

@@ -7,7 +7,10 @@ import '../../shared/widgets/loading_widget.dart';
 import '../../shared/widgets/user_avatar.dart';
 import '../../shared/widgets/status_card.dart';
 import '../../shared/widgets/feature_card.dart';
+import '../../shared/widgets/google_drive_widget.dart';
 import '../../routes/app_routes.dart';
+import '../../data/services/appwrite_auth_service.dart';
+import '../../data/services/approval_service.dart';
 
 /// Modern Material 3 home page
 class HomePage extends GetView<HomeController> {
@@ -32,6 +35,8 @@ class HomePage extends GetView<HomeController> {
                   const SizedBox(height: AppValues.paddingLarge),
                   _buildStatusSection(context),
                   const SizedBox(height: AppValues.paddingLarge),
+                  _buildGoogleDriveSection(context),
+                  const SizedBox(height: AppValues.paddingLarge),
                   _buildFeaturesSection(context),
                   const SizedBox(height: AppValues.paddingLarge),
                   _buildQuickActions(context),
@@ -53,6 +58,19 @@ class HomePage extends GetView<HomeController> {
       pinned: true,
       backgroundColor: Theme.of(context).colorScheme.primaryContainer,
       foregroundColor: Theme.of(context).colorScheme.onPrimaryContainer,
+      actions: [
+        // Add user profile and logout actions
+        IconButton(
+          icon: const Icon(Icons.account_circle),
+          onPressed: _showUserProfile,
+          tooltip: 'User Profile',
+        ),
+        IconButton(
+          icon: const Icon(Icons.logout),
+          onPressed: _logout,
+          tooltip: 'Logout',
+        ),
+      ],
       flexibleSpace: FlexibleSpaceBar(
         title: Text(
           AppStrings.appName,
@@ -90,14 +108,17 @@ class HomePage extends GetView<HomeController> {
   /// Build welcome section
   Widget _buildWelcomeSection(BuildContext context) {
     return Obx(() {
-      if (controller.isSignedIn) {
+      // Get current user from Appwrite auth service
+      final currentUser = AppwriteAuthService.to.currentUser;
+      
+      if (currentUser != null) {
         return Card(
           child: Padding(
             padding: const EdgeInsets.all(AppValues.paddingLarge),
             child: Row(
               children: [
                 UserAvatar(
-                  user: controller.currentUser!,
+                  user: currentUser,
                   radius: 30,
                 ),
                 const SizedBox(width: AppValues.paddingMedium),
@@ -106,7 +127,7 @@ class HomePage extends GetView<HomeController> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        controller.getUserGreeting(),
+                        _getUserGreeting(currentUser.name),
                         style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                           fontWeight: FontWeight.bold,
                         ),
@@ -121,10 +142,45 @@ class HomePage extends GetView<HomeController> {
                     ],
                   ),
                 ),
-                IconButton(
-                  onPressed: controller.signOut,
-                  icon: const Icon(Icons.logout),
-                  tooltip: 'Sign Out',
+                PopupMenuButton<String>(
+                  icon: const Icon(Icons.more_vert),
+                  onSelected: (String result) {
+                    switch (result) {
+                      case 'profile':
+                        _showUserProfile();
+                        break;
+                      case 'settings':
+                        Get.toNamed(AppRoutes.settings);
+                        break;
+                      case 'logout':
+                        _logout();
+                        break;
+                    }
+                  },
+                  itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
+                    const PopupMenuItem<String>(
+                      value: 'profile',
+                      child: ListTile(
+                        leading: Icon(Icons.account_circle),
+                        title: Text('Profile'),
+                      ),
+                    ),
+                    const PopupMenuItem<String>(
+                      value: 'settings',
+                      child: ListTile(
+                        leading: Icon(Icons.settings),
+                        title: Text('Settings'),
+                      ),
+                    ),
+                    const PopupMenuDivider(),
+                    const PopupMenuItem<String>(
+                      value: 'logout',
+                      child: ListTile(
+                        leading: Icon(Icons.logout),
+                        title: Text('Logout'),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -159,9 +215,12 @@ class HomePage extends GetView<HomeController> {
                 ),
                 const SizedBox(height: AppValues.paddingLarge),
                 FilledButton.icon(
-                  onPressed: controller.signInWithGoogle,
+                  onPressed: () {
+                    // For now, we'll navigate to login since we're using Appwrite auth
+                    Get.toNamed('/auth/login');
+                  },
                   icon: const Icon(Icons.login),
-                  label: const Text('Connect in with Google Drive'),
+                  label: const Text('Sign In'),
                 ),
               ],
             ),
@@ -196,16 +255,76 @@ class HomePage extends GetView<HomeController> {
             const SizedBox(width: AppValues.paddingMedium),
             Expanded(
               child: StatusCard(
-                title: 'Connection',
-                status: controller.getConnectionStatusMessage(),
-                icon: controller.isConnected ? Icons.wifi : Icons.wifi_off,
-                isPositive: controller.isConnected,
+                title: 'Approval Status',
+                status: _getApprovalStatus(),
+                icon: _getApprovalIcon(),
+                isPositive: _isApprovalPositive(),
               ),
             ),
           ],
         )),
+        const SizedBox(height: AppValues.paddingMedium),
+        Obx(() => StatusCard(
+          title: 'Connection',
+          status: controller.getConnectionStatusMessage(),
+          icon: controller.isConnected ? Icons.wifi : Icons.wifi_off,
+          isPositive: controller.isConnected,
+        )),
       ],
     );
+  }
+
+  /// Build Google Drive section
+  Widget _buildGoogleDriveSection(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Cloud Storage',
+          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: AppValues.paddingMedium),
+        const GoogleDriveWidget(),
+      ],
+    );
+  }
+
+  /// Get approval status text
+  String _getApprovalStatus() {
+    try {
+      final approvalService = ApprovalService.to;
+      if (approvalService.isChecking.value) {
+        return 'Checking...';
+      }
+      return approvalService.isApproved.value ? 'Approved' : 'Pending';
+    } catch (e) {
+      return 'Unknown';
+    }
+  }
+
+  /// Get approval status icon
+  IconData _getApprovalIcon() {
+    try {
+      final approvalService = ApprovalService.to;
+      if (approvalService.isChecking.value) {
+        return Icons.hourglass_empty;
+      }
+      return approvalService.isApproved.value ? Icons.verified : Icons.pending;
+    } catch (e) {
+      return Icons.help_outline;
+    }
+  }
+
+  /// Check if approval status is positive
+  bool _isApprovalPositive() {
+    try {
+      final approvalService = ApprovalService.to;
+      return approvalService.isApproved.value;
+    } catch (e) {
+      return false;
+    }
   }
 
   /// Build features section
@@ -250,6 +369,13 @@ class HomePage extends GetView<HomeController> {
               enabled: controller.isSignedIn && controller.isConnected,
             ),
             FeatureCard(
+              icon: Icons.qr_code,
+              title: 'QR Code Generator',
+              description: 'Create custom QR codes with advanced options',
+              onTap: () => Get.toNamed(AppRoutes.qrCodeForm),
+              enabled: controller.isSignedIn,
+            ),
+            FeatureCard(
               icon: Icons.settings,
               title: 'Settings',
               description: 'Configure app preferences and options',
@@ -289,6 +415,11 @@ class HomePage extends GetView<HomeController> {
               onPressed: controller.checkPermissions,
             ),
             ActionChip(
+              avatar: const Icon(Icons.qr_code, size: 18),
+              label: const Text('QR Generator'),
+              onPressed: () => Get.toNamed(AppRoutes.qrCodeForm),
+            ),
+            ActionChip(
               avatar: const Icon(Icons.info_outline, size: 18),
               label: const Text('App Info'),
               onPressed: controller.showAppInfo,
@@ -296,6 +427,93 @@ class HomePage extends GetView<HomeController> {
           ],
         ),
       ],
+    );
+  }
+
+  // Helper method to get user greeting based on time
+  String _getUserGreeting(String name) {
+    final hour = DateTime.now().hour;
+    final firstName = name.split(' ').first;
+    
+    if (hour < 12) {
+      return 'Good morning, $firstName!';
+    } else if (hour < 17) {
+      return 'Good afternoon, $firstName!';
+    } else {
+      return 'Good evening, $firstName!';
+    }
+  }
+
+  // User profile and logout methods
+  void _showUserProfile() {
+    final currentUser = AppwriteAuthService.to.currentUser;
+    if (currentUser != null) {
+      Get.defaultDialog(
+        title: 'User Profile',
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            UserAvatar(
+              user: currentUser,
+              radius: 40,
+            ),
+            const SizedBox(height: AppValues.paddingMedium),
+            Text(
+              currentUser.name,
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 18,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              currentUser.email,
+              style: const TextStyle(
+                color: Colors.grey,
+              ),
+            ),
+            const SizedBox(height: AppValues.paddingMedium),
+            Text(
+              'User ID: ${currentUser.id}',
+              style: const TextStyle(
+                fontSize: 12,
+                color: Colors.grey,
+              ),
+            ),
+          ],
+        ),
+        textConfirm: 'Close',
+        confirm: ElevatedButton(
+          onPressed: () => Get.back(),
+          child: const Text('Close'),
+        ),
+      );
+    } else {
+      Get.snackbar(
+        'Error',
+        'No user data available',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    }
+  }
+
+  void _logout() {
+    Get.defaultDialog(
+      title: 'Logout',
+      middleText: 'Are you sure you want to logout?',
+      confirm: FilledButton(
+        onPressed: () {
+          // Perform logout through Appwrite auth service
+          AppwriteAuthService.to.signOut();
+          Get.back(); // Close dialog
+          Get.offAllNamed('/auth/login'); // Navigate to login
+        },
+        child: const Text('Logout'),
+      ),
+      cancel: OutlinedButton(
+        onPressed: () => Get.back(), // Close dialog
+        child: const Text('Cancel'),
+      ),
     );
   }
 }
