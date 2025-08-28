@@ -1,6 +1,8 @@
+import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
 import 'package:appwrite/appwrite.dart';
 import 'package:appwrite/models.dart' as appwrite_models;
+import 'dart:io';
 import '../../core/errors/app_exception.dart';
 import '../models/user_model.dart';
 import '../../core/values/environment.dart';
@@ -15,32 +17,43 @@ class AppwriteAuthService extends GetxService {
   late final Databases _databases;
   
   // Database constants
-  static const String DATABASE_ID = 'main_db'; // Created via CLI
-  static const String USER_COLLECTION_ID = 'users'; // Created via CLI
+  static const String databaseId = 'main_db'; // Created via CLI
+  static const String userCollectionId = 'users'; // Created via CLI
   
   // Reactive variables
   final _isLoading = false.obs;
   final _currentUser = Rxn<UserModel>();
+  final _isInitialized = false.obs;
 
   // Getters
   bool get isLoading => _isLoading.value;
   UserModel? get currentUser => _currentUser.value;
   bool get isAuthenticated => _currentUser.value != null;
+  bool get isInitialized => _isInitialized.value;
 
   @override
   void onInit() {
     super.onInit();
     _initializeClient();
-    _checkExistingSession();
+    _initializeAuth();
+  }
+
+  /// Initialize authentication and check existing session
+  Future<void> _initializeAuth() async {
+    await _checkExistingSession();
+    _isInitialized.value = true;
   }
 
   /// Initialize Appwrite client
   void _initializeClient() {
+    // Override SSL certificate validation for development/testing
+    HttpOverrides.global = _AppwriteHttpOverrides();
+    
     _client = Client();
     _client
         .setEndpoint(Environment.appwritePublicEndpoint)
         .setProject(Environment.appwriteProjectId)
-        .setSelfSigned(status: true);
+        .setSelfSigned(status: true); // Enable for SSL issues with cloud endpoints
     
     _account = Account(_client);
     _databases = Databases(_client);
@@ -49,11 +62,24 @@ class AppwriteAuthService extends GetxService {
   /// Check for existing session on initialization
   Future<void> _checkExistingSession() async {
     try {
+      _isLoading.value = true;
       final user = await _account.get();
       _updateCurrentUser(user);
+      
+      // Start approval monitoring
+      try {
+        if (Get.isRegistered<ApprovalService>()) {
+          final approvalService = Get.find<ApprovalService>();
+          approvalService.startMonitoring();
+        }
+      } catch (e) {
+        // ApprovalService not initialized yet, will be handled later
+      }
     } catch (e) {
       // No active session or error getting user
       _currentUser.value = null;
+    } finally {
+      _isLoading.value = false;
     }
   }
 
@@ -89,7 +115,19 @@ class AppwriteAuthService extends GetxService {
       // Create user document in database
       await _createUserDocument(user);
 
-      _updateCurrentUser(user);
+      // Get updated user data
+      final updatedUser = await _account.get();
+      _updateCurrentUser(updatedUser);
+      
+      // Start approval monitoring
+      try {
+        if (Get.isRegistered<ApprovalService>()) {
+          final approvalService = Get.find<ApprovalService>();
+          approvalService.startMonitoring();
+        }
+      } catch (e) {
+        // ApprovalService not initialized yet, will be handled later
+      }
     } on AppwriteException catch (e) {
       throw AppExceptionImpl(
         message: 'Sign up failed: ${e.message}',
@@ -110,8 +148,8 @@ class AppwriteAuthService extends GetxService {
   Future<void> _createUserDocument(appwrite_models.User appwriteUser) async {
     try {
       await _databases.createDocument(
-        databaseId: DATABASE_ID,
-        collectionId: USER_COLLECTION_ID,
+        databaseId: databaseId,
+        collectionId: userCollectionId,
         documentId: appwriteUser.$id,
         data: {
           'email': appwriteUser.email,
@@ -123,10 +161,10 @@ class AppwriteAuthService extends GetxService {
         },
       );
     } on AppwriteException catch (e) {
-      print('Failed to create user document: AppwriteException: ${e.type}, ${e.message} (${e.code})');
+      debugPrint('Failed to create user document: AppwriteException: ${e.type}, ${e.message} (${e.code})');
       rethrow; // Re-throw to handle in signup method
     } catch (e) {
-      print('Failed to create user document: $e');
+      debugPrint('Failed to create user document: $e');
       rethrow; // Re-throw to handle in signup method
     }
   }
@@ -139,7 +177,22 @@ class AppwriteAuthService extends GetxService {
     try {
       _isLoading.value = true;
       
-      final session = await _account.createEmailPasswordSession(
+      // Check if there's already an active session
+      try {
+        final existingUser = await _account.get();
+        if (existingUser.email == email) {
+          // User is already signed in with the same email
+          _updateCurrentUser(existingUser);
+          return;
+        } else {
+          // Different user is signed in, sign them out first
+          await _account.deleteSession(sessionId: 'current');
+        }
+      } catch (e) {
+        // No active session, proceed with sign in
+      }
+      
+      await _account.createEmailPasswordSession(
         email: email,
         password: password,
       );
@@ -148,7 +201,7 @@ class AppwriteAuthService extends GetxService {
       final user = await _account.get();
       _updateCurrentUser(user);
       
-      // Start approval monitoring after successful sign in
+      // Start approval monitoring
       try {
         if (Get.isRegistered<ApprovalService>()) {
           final approvalService = Get.find<ApprovalService>();
@@ -158,6 +211,33 @@ class AppwriteAuthService extends GetxService {
         // ApprovalService not initialized yet, will be handled in bindings
       }
     } on AppwriteException catch (e) {
+      // Handle specific Appwrite errors
+      if (e.type == 'user_session_already_exists') {
+        // Session already exists, try to get current user
+        try {
+          final user = await _account.get();
+          _updateCurrentUser(user);
+          return;
+        } catch (getUserError) {
+          // If we can't get user, delete session and try again
+          try {
+            await _account.deleteSession(sessionId: 'current');
+            await _account.createEmailPasswordSession(
+              email: email,
+              password: password,
+            );
+            final user = await _account.get();
+            _updateCurrentUser(user);
+            return;
+          } catch (retryError) {
+            throw AppExceptionImpl(
+              message: 'Sign in failed after retry: ${retryError.toString()}',
+              originalException: retryError,
+            );
+          }
+        }
+      }
+      
       throw AppExceptionImpl(
         message: 'Sign in failed: ${e.message}',
         code: e.type,
@@ -300,8 +380,8 @@ class AppwriteAuthService extends GetxService {
       if (currentUser != null) {
         // Check the approved field in the database
         final document = await _databases.getDocument(
-          databaseId: DATABASE_ID,
-          collectionId: USER_COLLECTION_ID,
+          databaseId: databaseId,
+          collectionId: userCollectionId,
           documentId: currentUser.id,
         );
         
@@ -320,19 +400,34 @@ class AppwriteAuthService extends GetxService {
       email: user.email,
       name: user.name,
       photoUrl: user.prefs.data['photoUrl'] as String?,
-      approved: user.emailVerification, // Using email verification as approval status
+      approved: false, // Will be updated by approval service
     );
+  }
+
+  /// Update current user approval status in memory (called by approval service)
+  void updateCurrentUserApprovalStatus(bool approved) {
+    final currentUser = _currentUser.value;
+    if (currentUser != null) {
+      _currentUser.value = currentUser.copyWith(approved: approved);
+    }
+  }
+
+  /// Wait for authentication initialization to complete
+  Future<void> waitForInitialization() async {
+    while (!_isInitialized.value) {
+      await Future.delayed(const Duration(milliseconds: 100));
+    }
   }
 
   /// Get Appwrite client instance
   Client get client => _client;
   
-  /// Update user approval status (for admin use)
-  Future<void> updateUserApprovalStatus(String userId, bool approved) async {
+  /// Update user approval status in database (for admin use)
+  Future<void> updateUserApprovalStatusInDatabase(String userId, bool approved) async {
     try {
       await _databases.updateDocument(
-        databaseId: DATABASE_ID,
-        collectionId: USER_COLLECTION_ID,
+        databaseId: databaseId,
+        collectionId: userCollectionId,
         documentId: userId,
         data: {
           'approved': approved,
@@ -351,5 +446,17 @@ class AppwriteAuthService extends GetxService {
         originalException: e,
       );
     }
+  }
+}
+
+/// Custom HTTP overrides to handle SSL certificate issues
+class _AppwriteHttpOverrides extends HttpOverrides {
+  @override
+  HttpClient createHttpClient(SecurityContext? context) {
+    return super.createHttpClient(context)
+      ..badCertificateCallback = (X509Certificate cert, String host, int port) {
+        // Only allow for Appwrite cloud endpoints
+        return host.contains('cloud.appwrite.io');
+      };
   }
 }

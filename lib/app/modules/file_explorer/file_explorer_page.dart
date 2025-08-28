@@ -188,7 +188,7 @@ class FileExplorerPage extends GetView<FileExplorerController> {
                       color: colorScheme.surfaceContainerHighest,
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(
-                        color: colorScheme.outline.withOpacity(0.5),
+                        color: colorScheme.outline.withValues(alpha:0.5),
                         style: BorderStyle.solid,
                       ),
                     ),
@@ -210,7 +210,7 @@ class FileExplorerPage extends GetView<FileExplorerController> {
                         Text(
                           'Choose a directory to watch for new images',
                           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: colorScheme.onSurfaceVariant.withOpacity(0.7),
+                            color: colorScheme.onSurfaceVariant.withValues(alpha:0.7),
                           ),
                           textAlign: TextAlign.center,
                         ),
@@ -239,7 +239,7 @@ class FileExplorerPage extends GetView<FileExplorerController> {
                         Icon(
                           Icons.image_not_supported_outlined,
                           size: 64,
-                          color: colorScheme.onSurfaceVariant.withOpacity(0.5),
+                          color: colorScheme.onSurfaceVariant.withValues(alpha:0.5),
                         ),
                         const SizedBox(height: 16),
                         Text(
@@ -411,7 +411,7 @@ class FileExplorerPage extends GetView<FileExplorerController> {
         Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: color.withOpacity(0.1),
+            color: color.withValues(alpha:0.1),
             shape: BoxShape.circle,
           ),
           child: Icon(icon, color: color, size: 24),

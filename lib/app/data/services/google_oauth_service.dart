@@ -5,7 +5,6 @@ import 'dart:math';
 import 'package:crypto/crypto.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_web_auth_2/flutter_web_auth_2.dart';
 import 'package:get/get.dart';
@@ -60,15 +59,18 @@ class AuthService extends GetxService {
     if (_isInitialized || _isInitializing) {
       return;
     }
-    
+
     _isInitializing = true;
-    
+
     try {
       // Initialize client IDs
       if (_clientId == null) {
-        _clientId = dotenv.env['WEB_CLIENT_ID'];
-        _clientSecret = dotenv.env['WEB_CLIENT_SECRET'];
-        
+        // _clientId = dotenv.env['WEB_CLIENT_ID'];
+        // _clientSecret = dotenv.env['WEB_CLIENT_SECRET'];
+        _clientId =
+            "424570474094-66fio54fct71j2ufjl0pqnfdqdp64i60.apps.googleusercontent.com";
+        _clientSecret = "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";
+
         if (_clientId == null) {
           throw AuthException.signInFailed('Client ID not configured');
         }
@@ -99,7 +101,10 @@ class AuthService extends GetxService {
       _isInitialized = true;
       ErrorHandler.logInfo('AuthService initialized successfully');
     } on PlatformException catch (e) {
-      ErrorHandler.logError('PlatformException during AuthService initialization', error: e, context: 'AuthService._initializeService');
+      ErrorHandler.logError(
+          'PlatformException during AuthService initialization',
+          error: e,
+          context: 'AuthService._initializeService');
       final diagnostics = PlatformDiagnosticsService.to;
       diagnostics.logPlatformChannelError('google_sign_in', e);
       _authStatus.value = AuthStatus.error;
@@ -119,13 +124,15 @@ class AuthService extends GetxService {
       if (_isWindows) {
         final accessToken = await _storage.read(key: 'accessToken');
         final refreshToken = await _storage.read(key: 'refreshToken');
-        
+
         if (accessToken != null || refreshToken != null) {
           try {
             await _loadCurrentUser();
           } catch (e) {
             // If we can't load the current user, just set as signed out
-            ErrorHandler.logWarning('Failed to load current user during initialization: $e', 'AuthService._checkSignInStatus');
+            ErrorHandler.logWarning(
+                'Failed to load current user during initialization: $e',
+                'AuthService._checkSignInStatus');
             _authStatus.value = AuthStatus.signedOut;
             // Clear invalid tokens
             await _storage.delete(key: 'accessToken');
@@ -141,7 +148,9 @@ class AuthService extends GetxService {
             await _loadCurrentUser();
           } catch (e) {
             // If we can't load the current user, just set as signed out
-            ErrorHandler.logWarning('Failed to load current user during initialization: $e', 'AuthService._checkSignInStatus');
+            ErrorHandler.logWarning(
+                'Failed to load current user during initialization: $e',
+                'AuthService._checkSignInStatus');
             _authStatus.value = AuthStatus.signedOut;
           }
         } else {
@@ -150,7 +159,8 @@ class AuthService extends GetxService {
       }
     } catch (e) {
       ErrorHandler.handleError(e, context: 'AuthService._checkSignInStatus');
-      _authStatus.value = AuthStatus.signedOut; // Default to signed out on error
+      _authStatus.value =
+          AuthStatus.signedOut; // Default to signed out on error
     }
   }
 
@@ -158,21 +168,21 @@ class AuthService extends GetxService {
   Future<void> signInWithGoogle() async {
     try {
       _authStatus.value = AuthStatus.signingIn;
-      
+
       if (_isWindows) {
         await _signInWithGoogleWindows();
       } else {
         await _signInWithGoogleNative();
       }
-      
+
       await _loadCurrentUser();
       _authStatus.value = AuthStatus.signedIn;
-      
+
       ErrorHandler.logInfo('User signed in successfully');
     } catch (e) {
       _authStatus.value = AuthStatus.error;
       ErrorHandler.handleError(e, context: 'AuthService.signInWithGoogle');
-      
+
       if (e is AuthException) {
         rethrow;
       } else {
@@ -190,7 +200,7 @@ class AuthService extends GetxService {
       }
 
       final GoogleSignInAuthentication auth = await account.authentication;
-      
+
       if (auth.accessToken == null) {
         throw AuthException.signInFailed('Failed to obtain access token');
       }
@@ -200,10 +210,10 @@ class AuthService extends GetxService {
         await _storage.write(key: 'refreshToken', value: auth.idToken);
       }
     } on PlatformException catch (e) {
-      ErrorHandler.logError('PlatformException during Google Sign In', error: e, context: 'AuthService._signInWithGoogleNative');
+      ErrorHandler.logError('PlatformException during Google Sign In',
+          error: e, context: 'AuthService._signInWithGoogleNative');
       final diagnostics = PlatformDiagnosticsService.to;
       diagnostics.logPlatformChannelError('google_sign_in', e);
-      rethrow;
       throw AuthException.signInFailed('Native sign in failed: $e');
     } catch (e) {
       if (e is AuthException) rethrow;
@@ -217,21 +227,34 @@ class AuthService extends GetxService {
       final codeVerifier = _generateCodeVerifier();
       final codeChallenge = _generateCodeChallenge(codeVerifier);
 
+      // Use localhost with port 8080 - this needs to be configured in Google Console
+      const redirectUri = 'http://localhost:8080';
+      
       final authUrl = 'https://accounts.google.com/o/oauth2/v2/auth?'
           'response_type=code&'
           'client_id=$_clientId&'
-          'redirect_uri=http://localhost:8080&'
-          'scope=https://www.googleapis.com/auth/drive.file profile email&'
+          'redirect_uri=${Uri.encodeComponent(redirectUri)}&'
+          'scope=${Uri.encodeComponent('https://www.googleapis.com/auth/drive.file profile email')}&'
           'code_challenge=$codeChallenge&'
-          'code_challenge_method=S256';
+          'code_challenge_method=S256&'
+          'access_type=offline&'
+          'prompt=consent';
 
       final result = await FlutterWebAuth2.authenticate(
         url: authUrl,
-        callbackUrlScheme: 'http://localhost:8080',
+        callbackUrlScheme: 'http',
+        options: const FlutterWebAuth2Options(
+          timeout: 300000, // 5 minutes in milliseconds
+        ),
       );
 
       final uri = Uri.parse(result);
       final code = uri.queryParameters['code'];
+      final error = uri.queryParameters['error'];
+
+      if (error != null) {
+        throw AuthException.signInFailed('Authorization failed: $error');
+      }
 
       if (code == null) {
         throw AuthException.signInFailed('Authorization code not received');
@@ -244,22 +267,28 @@ class AuthService extends GetxService {
           'code': code,
           'client_id': _clientId!,
           'client_secret': _clientSecret!,
-          'redirect_uri': 'http://localhost:8080',
+          'redirect_uri': redirectUri,
           'grant_type': 'authorization_code',
           'code_verifier': codeVerifier,
         },
       ).timeout(const Duration(seconds: AppValues.networkTimeoutSeconds));
 
       if (response.statusCode != 200) {
-        throw AuthException.signInFailed('Token exchange failed: ${response.body}');
+        throw AuthException.signInFailed(
+            'Token exchange failed: ${response.body}');
       }
 
       final data = json.decode(response.body);
       await _storage.write(key: 'accessToken', value: data['access_token']);
-      
+
       if (data['refresh_token'] != null) {
         await _storage.write(key: 'refreshToken', value: data['refresh_token']);
       }
+    } on PlatformException catch (e) {
+      if (e.code == 'CANCELED') {
+        throw AuthException.signInFailed('User canceled sign in');
+      }
+      throw AuthException.signInFailed('Windows sign in failed: ${e.message}');
     } catch (e) {
       if (e is AuthException) rethrow;
       throw AuthException.signInFailed('Windows sign in failed: $e');
@@ -272,13 +301,13 @@ class AuthService extends GetxService {
       if (!_isWindows) {
         await _googleSignIn.signOut();
       }
-      
+
       await _storage.delete(key: 'accessToken');
       await _storage.delete(key: 'refreshToken');
-      
+
       _authStatus.value = AuthStatus.signedOut;
       _currentUser.value = null;
-      
+
       ErrorHandler.logInfo('User signed out successfully');
     } catch (e) {
       ErrorHandler.handleError(e, context: 'AuthService.signOut');
@@ -304,16 +333,16 @@ class AuthService extends GetxService {
   /// Get access token for Windows
   Future<String> _getAccessTokenWindows() async {
     String? accessToken = await _storage.read(key: 'accessToken');
-    
+
     if (accessToken == null) {
       final refreshToken = await _storage.read(key: 'refreshToken');
       if (refreshToken == null) {
         throw AuthException.notSignedIn();
       }
-      
+
       accessToken = await _refreshTokenWindows(refreshToken);
     }
-    
+
     return accessToken;
   }
 
@@ -323,12 +352,12 @@ class AuthService extends GetxService {
     if (account == null) {
       throw AuthException.notSignedIn();
     }
-    
+
     final GoogleSignInAuthentication auth = await account.authentication;
     if (auth.accessToken == null) {
       throw AuthException.tokenExpired();
     }
-    
+
     return auth.accessToken!;
   }
 
@@ -353,7 +382,7 @@ class AuthService extends GetxService {
     final data = json.decode(response.body);
     final newAccessToken = data['access_token'];
     await _storage.write(key: 'accessToken', value: newAccessToken);
-    
+
     return newAccessToken;
   }
 
@@ -361,7 +390,7 @@ class AuthService extends GetxService {
   Future<void> _loadCurrentUser() async {
     try {
       final accessToken = await getAccessToken();
-      
+
       final response = await http.get(
         Uri.parse('https://www.googleapis.com/oauth2/v3/userinfo'),
         headers: {'Authorization': 'Bearer $accessToken'},
@@ -379,7 +408,7 @@ class AuthService extends GetxService {
         photoUrl: userData['picture'],
         accessToken: accessToken,
       );
-      
+
       _authStatus.value = AuthStatus.signedIn;
     } catch (e) {
       ErrorHandler.handleError(e, context: 'AuthService._loadCurrentUser');
@@ -390,7 +419,8 @@ class AuthService extends GetxService {
 
   /// Generate code verifier for PKCE
   String _generateCodeVerifier() {
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~';
+    const chars =
+        'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~';
     final random = Random.secure();
     return List.generate(64, (_) => chars[random.nextInt(chars.length)]).join();
   }
@@ -403,11 +433,12 @@ class AuthService extends GetxService {
   }
 
   /// Execute operation with valid authentication
-  Future<T> executeWithAuth<T>(Future<T> Function(String accessToken) operation) async {
+  Future<T> executeWithAuth<T>(
+      Future<T> Function(String accessToken) operation) async {
     if (!isSignedIn) {
       throw AuthException.notSignedIn();
     }
-    
+
     final accessToken = await getAccessToken();
     return await operation(accessToken);
   }

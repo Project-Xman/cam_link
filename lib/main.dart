@@ -1,4 +1,6 @@
+import 'dart:io';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:get/get.dart';
@@ -18,17 +20,28 @@ void overlayMain() {
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   // Load environment variables
   await dotenv.load(fileName: "lib/.env");
 
   // Initialize services
   InitialBinding().dependencies();
 
-  // Initialize Firebase
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+  // Initialize Firebase only on supported platforms
+  // Windows desktop doesn't support Firebase properly, so we skip it
+  if (!kIsWeb && Platform.isWindows) {
+    debugPrint('Skipping Firebase initialization on Windows desktop');
+  } else {
+    try {
+      await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform,
+      );
+      debugPrint('Firebase initialized successfully');
+    } catch (e) {
+      debugPrint('Firebase initialization failed: $e');
+      // Continue without Firebase - the app can still work with OAuth
+    }
+  }
 
   // Run the app
   runApp(const PhotoUploaderApp());

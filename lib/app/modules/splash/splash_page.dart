@@ -6,6 +6,7 @@ import '../../data/services/google_oauth_service.dart';
 import '../../data/services/storage_service.dart';
 import '../../data/services/connectivity_service.dart';
 import '../../data/services/appwrite_auth_service.dart';
+import '../../data/services/approval_service.dart';
 import '../../routes/app_routes.dart';
 
 /// Splash screen to initialize app services
@@ -83,21 +84,32 @@ class _SplashPageState extends State<SplashPage> {
   Future<void> _checkAuthStatus() async {
     if (mounted) {
       try {
-        // Check Appwrite auth status
+        // Wait for Appwrite auth service to complete initialization
         final appwriteAuth = AppwriteAuthService.to;
+        await appwriteAuth.waitForInitialization();
         
         if (appwriteAuth.isAuthenticated) {
-          // User is authenticated, check approval status
+          // User is authenticated, initialize and check approval status
           final currentUser = appwriteAuth.currentUser;
           
-          // In a real implementation, you would check a custom user status field
-          // For now, we'll use the approved field from the UserModel
-          if (currentUser != null && currentUser.approved) {
-            // User is authenticated and approved - route to home page
-            AppRoutes.toHome();
+          if (currentUser != null) {
+            // Initialize approval service and force check approval status
+            final approvalService = ApprovalService.to;
+            await approvalService.forceCheckApproval();
+            
+            // Get the approval status from the approval service
+            final isApproved = approvalService.isApproved.value;
+            
+            if (isApproved) {
+              // User is authenticated and approved - route to home page
+              AppRoutes.toHome();
+            } else {
+              // User is authenticated but not approved - route to admin approval page
+              AppRoutes.toAdminApproval();
+            }
           } else {
-            // User is authenticated but not approved - route to admin approval page
-            AppRoutes.toAdminApproval();
+            // No user data available - route to login page
+            AppRoutes.toLogin();
           }
         } else {
           // User is not authenticated - route to login page

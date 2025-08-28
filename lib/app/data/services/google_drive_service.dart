@@ -1,127 +1,114 @@
-import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
-import 'package:google_sign_in/google_sign_in.dart';
 import 'package:googleapis/drive/v3.dart' as drive;
 import 'package:http/http.dart' as http;
 import '../../core/errors/app_exception.dart';
 import '../models/enums.dart';
+import '../models/user_model.dart';
+import 'google_oauth_service.dart';
 
 /// Google Drive integration service
 class GoogleDriveService extends GetxService {
   static GoogleDriveService get to => Get.find();
 
-  GoogleSignIn? _googleSignIn;
+  // Dependencies
+  late final AuthService _authService;
   drive.DriveApi? _driveApi;
-  GoogleSignInAccount? _currentUser;
-  
-  // Platform support check
-  final bool _isPlatformSupported = _checkPlatformSupport();
-  
+
   // Reactive variables
-  final isConnected = false.obs;
   final isLoading = false.obs;
   final availableDrives = <drive.Drive>[].obs;
   final currentDrive = Rxn<drive.Drive>();
   final platformSupported = true.obs;
+  final storageInfo = Rxn<drive.About>();
 
-  /// Check if current platform supports Google Sign-In
-  static bool _checkPlatformSupport() {
-    if (kIsWeb) return true;
-    if (Platform.isAndroid || Platform.isIOS || Platform.isMacOS) return true;
-    return false; // Windows and Linux are not fully supported
-  }
+  // Computed getters
+  bool get isConnected => _authService.isSignedIn;
+  UserModel? get currentUser => _authService.currentUser;
 
   @override
   void onInit() {
     super.onInit();
-    platformSupported.value = _isPlatformSupported;
-    
-    if (_isPlatformSupported) {
-      _initializeGoogleSignIn();
+    debugPrint('GoogleDriveService initializing...');
+
+    // Get AuthService dependency
+    _authService = AuthService.to;
+
+    // Listen to auth status changes
+    _authService.authStatusStream.listen((status) {
+      _onAuthStatusChanged(status);
+    });
+
+    // Initialize if already signed in
+    if (_authService.isSignedIn) {
+      _initializeDriveApi();
+    }
+
+    platformSupported.value =
+        true; // Platform support is handled by AuthService
+  }
+
+  /// Handle auth status changes
+  void _onAuthStatusChanged(AuthStatus status) {
+    debugPrint('Auth status changed: $status');
+
+    if (status == AuthStatus.signedIn) {
+      _initializeAndLoadData();
     } else {
-      _showPlatformNotSupportedMessage();
+      _driveApi = null;
+      availableDrives.clear();
+      currentDrive.value = null;
+      storageInfo.value = null;
     }
   }
 
-  /// Show platform not supported message
-  void _showPlatformNotSupportedMessage() {
-    Get.snackbar(
-      'Platform Not Supported',
-      'Google Drive integration is not available on this platform. Please use a supported device (Android, iOS, macOS, or Web).',
-      snackPosition: SnackPosition.BOTTOM,
-      backgroundColor: Get.theme.colorScheme.errorContainer,
-      duration: const Duration(seconds: 5),
-    );
-  }
-
-  /// Initialize Google Sign In
-  void _initializeGoogleSignIn() {
+  /// Initialize Drive API and load data sequentially
+  Future<void> _initializeAndLoadData() async {
     try {
-      _googleSignIn = GoogleSignIn(
-        scopes: [
-          'https://www.googleapis.com/auth/drive',
-          'https://www.googleapis.com/auth/drive.file',
-          'https://www.googleapis.com/auth/drive.readonly',
-        ],
-      );
+      debugPrint('Starting Drive API initialization and data loading...');
 
-      // Listen to sign in state changes
-      _googleSignIn!.onCurrentUserChanged.listen((GoogleSignInAccount? account) {
-        _currentUser = account;
-        isConnected.value = account != null;
-        
-        if (account != null) {
-          _initializeDriveApi();
-          loadAvailableDrives();
-        } else {
-          _driveApi = null;
-          availableDrives.clear();
-          currentDrive.value = null;
-        }
-      });
+      // Initialize Drive API first
+      await _initializeDriveApi();
 
-      // Check if user is already signed in
-      _googleSignIn!.signInSilently().catchError((error) {
-        debugPrint('Silent sign-in failed: $error');
-        // Ignore silent sign-in errors
-      });
+      // Wait a moment for API to be fully ready
+      await Future.delayed(const Duration(milliseconds: 500));
+
+      // Load drives and storage info in parallel
+      await Future.wait([
+        loadAvailableDrives(),
+        loadStorageInfo(),
+      ]);
+
+      debugPrint('Drive API initialization and data loading completed');
     } catch (e) {
-      debugPrint('Failed to initialize Google Sign-In: $e');
-      platformSupported.value = false;
-      _showPlatformNotSupportedMessage();
+      debugPrint('Error during Drive API initialization: $e');
     }
   }
 
-  /// Initialize Drive API
+  /// Initialize Drive API using AuthService access token
   Future<void> _initializeDriveApi() async {
-    if (_currentUser == null) return;
-
     try {
-      final authHeaders = await _currentUser!.authHeaders;
-      final authenticateClient = GoogleAuthClient(authHeaders);
-      _driveApi = drive.DriveApi(authenticateClient);
+      debugPrint('Initializing Drive API...');
+
+      final accessToken = await _authService.getAccessToken();
+      final authHeaders = {'Authorization': 'Bearer $accessToken'};
+      final authClient = GoogleAuthClient(authHeaders);
+      _driveApi = drive.DriveApi(authClient);
+
+      debugPrint('Drive API initialized successfully');
     } catch (e) {
       debugPrint('Error initializing Drive API: $e');
+      _driveApi = null;
     }
   }
 
-  /// Sign in to Google Drive
+  /// Sign in to Google Drive using AuthService
   Future<void> signInToGoogleDrive() async {
-    if (!_isPlatformSupported || _googleSignIn == null) {
-      _showPlatformNotSupportedMessage();
-      return;
-    }
-
     try {
       isLoading.value = true;
-      
-      final account = await _googleSignIn!.signIn();
-      if (account == null) {
-        throw AppExceptionImpl(
-          message: 'Google Sign In was cancelled',
-        );
-      }
+
+      // Use the AuthService sign-in methods based on platform
+      await _authService.signInWithGoogle();
 
       Get.snackbar(
         'Success',
@@ -141,15 +128,11 @@ class GoogleDriveService extends GetxService {
     }
   }
 
-  /// Sign out from Google Drive
+  /// Sign out from Google Drive using AuthService
   Future<void> signOutFromGoogleDrive() async {
-    if (!_isPlatformSupported || _googleSignIn == null) {
-      return;
-    }
-
     try {
-      await _googleSignIn!.signOut();
-      
+      await _authService.signOut();
+
       Get.snackbar(
         'Disconnected',
         'Disconnected from Google Drive',
@@ -176,7 +159,7 @@ class GoogleDriveService extends GetxService {
         ..id = 'my-drive'
         ..name = 'My Drive'
         ..kind = 'drive#drive';
-      
+
       availableDrives.add(myDrive);
 
       // Get Shared Drives
@@ -194,7 +177,6 @@ class GoogleDriveService extends GetxService {
       if (currentDrive.value == null && availableDrives.isNotEmpty) {
         currentDrive.value = availableDrives.first;
       }
-
     } catch (e) {
       throw AppExceptionImpl(
         message: 'Failed to load available drives: $e',
@@ -205,10 +187,89 @@ class GoogleDriveService extends GetxService {
     }
   }
 
+  /// Load storage information
+  Future<void> loadStorageInfo() async {
+    if (_driveApi == null) {
+      debugPrint('Cannot load storage info: Drive API not initialized');
+      return;
+    }
+
+    try {
+      debugPrint('Starting to load storage info...');
+
+      // Try different approaches for better compatibility
+      drive.About? about;
+
+      try {
+        // First try with specific fields
+        about = await _driveApi!.about
+            .get(
+              $fields: 'storageQuota,user,kind',
+            )
+            .timeout(const Duration(seconds: 30));
+        debugPrint('Storage info loaded with specific fields');
+      } catch (e) {
+        debugPrint('Failed with specific fields, trying without fields: $e');
+
+        // Fallback: try without field specification
+        about =
+            await _driveApi!.about.get().timeout(const Duration(seconds: 30));
+        debugPrint('Storage info loaded without field specification');
+      }
+
+      if (about != null) {
+        storageInfo.value = about;
+
+        final usage = about.storageQuota?.usage;
+        final limit = about.storageQuota?.limit;
+        final usageInTrash = about.storageQuota?.usageInDrive;
+
+        debugPrint('Storage info loaded successfully:');
+        debugPrint('  Usage: $usage bytes');
+        debugPrint('  Limit: $limit bytes');
+        debugPrint('  Usage in Drive: $usageInTrash bytes');
+        debugPrint(
+            '  User: ${about.user?.displayName ?? about.user?.emailAddress}');
+        debugPrint('  Kind: ${about.kind}');
+
+        // Force UI update
+        storageInfo.refresh();
+      } else {
+        throw Exception('No storage information received from API');
+      }
+    } catch (e) {
+      debugPrint('Error loading storage info: $e');
+      debugPrint('Error type: ${e.runtimeType}');
+
+      // Try to get basic user info at least
+      try {
+        debugPrint('Attempting to get basic user info...');
+        final about = await _driveApi!.about
+            .get($fields: 'user')
+            .timeout(const Duration(seconds: 10));
+        debugPrint('Basic user info: ${about.user?.displayName}');
+      } catch (userError) {
+        debugPrint('Failed to get basic user info: $userError');
+      }
+
+      // Set storage info to null to show error state
+      storageInfo.value = null;
+
+      // Show user-friendly error
+      Get.snackbar(
+        'Storage Info',
+        'Unable to load storage information. This may be due to API limitations.',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Get.theme.colorScheme.errorContainer,
+        duration: const Duration(seconds: 3),
+      );
+    }
+  }
+
   /// Select a drive
   void selectDrive(drive.Drive selectedDrive) {
     currentDrive.value = selectedDrive;
-    
+
     Get.snackbar(
       'Drive Selected',
       'Selected: ${selectedDrive.name}',
@@ -282,7 +343,9 @@ class GoogleDriveService extends GetxService {
         q: query,
         pageSize: maxResults,
         spaces: currentDrive.value?.id == 'my-drive' ? 'drive' : null,
-        driveId: currentDrive.value?.id != 'my-drive' ? currentDrive.value?.id : null,
+        driveId: currentDrive.value?.id != 'my-drive'
+            ? currentDrive.value?.id
+            : null,
         includeItemsFromAllDrives: true,
         supportsAllDrives: true,
       );
@@ -296,11 +359,73 @@ class GoogleDriveService extends GetxService {
     }
   }
 
-  /// Get current user info
-  GoogleSignInAccount? get currentUser => _currentUser;
-
   /// Get current drive name
-  String get currentDriveName => currentDrive.value?.name ?? 'No drive selected';
+  String get currentDriveName =>
+      currentDrive.value?.name ?? 'No drive selected';
+
+  /// Get formatted storage usage
+  String get formattedStorageUsage {
+    final quota = storageInfo.value?.storageQuota;
+    if (quota == null) {
+      debugPrint('No storage quota available');
+      return 'Storage info unavailable';
+    }
+
+    debugPrint('Formatting storage usage: ${quota.usage} / ${quota.limit}');
+
+    final used = int.tryParse(quota.usage ?? '0') ?? 0;
+    final total = int.tryParse(quota.limit ?? '0') ?? 0;
+
+    if (total == 0) {
+      debugPrint('Total storage is 0, assuming unlimited');
+      return 'Unlimited storage';
+    }
+
+    final formatted = '${_formatBytes(used)} / ${_formatBytes(total)} used';
+    debugPrint('Formatted storage: $formatted');
+    return formatted;
+  }
+
+  /// Get storage usage percentage
+  double get storageUsagePercentage {
+    final quota = storageInfo.value?.storageQuota;
+    if (quota == null) return 0.0;
+
+    final used = int.tryParse(quota.usage ?? '0') ?? 0;
+    final total = int.tryParse(quota.limit ?? '0') ?? 0;
+
+    if (total == 0) return 0.0;
+
+    final percentage = (used / total) * 100;
+    debugPrint('Storage usage percentage: $percentage%');
+    return percentage;
+  }
+
+  /// Format bytes to human readable format
+  String _formatBytes(int bytes) {
+    if (bytes < 1024) return '$bytes B';
+    if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
+    if (bytes < 1024 * 1024 * 1024)
+      return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+    return '${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(1)} GB';
+  }
+
+  /// Test configuration without signing in
+  bool testConfiguration() {
+    try {
+      // Test if AuthService is properly configured
+      return _authService.isSignedIn || platformSupported.value;
+    } catch (e) {
+      debugPrint('Configuration test failed: $e');
+      Get.snackbar(
+        'Configuration Error',
+        'Google Drive configuration is not properly set up',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Get.theme.colorScheme.errorContainer,
+      );
+      return false;
+    }
+  }
 
   /// Create folder in current drive
   Future<bool> createFolder(String folderName) async {
@@ -316,7 +441,7 @@ class GoogleDriveService extends GetxService {
         ..mimeType = 'application/vnd.google-apps.folder';
 
       final createdFolder = await _driveApi!.files.create(folder);
-      
+
       Get.snackbar(
         'Folder Created',
         'Folder "$folderName" created successfully',
@@ -351,7 +476,9 @@ class GoogleDriveService extends GetxService {
       String? folderId;
       final files = await listFiles();
       final existingFolder = files.firstWhereOrNull(
-        (file) => file.name == folderName && file.mimeType == 'application/vnd.google-apps.folder',
+        (file) =>
+            file.name == folderName &&
+            file.mimeType == 'application/vnd.google-apps.folder',
       );
 
       if (existingFolder != null) {
@@ -373,7 +500,9 @@ class GoogleDriveService extends GetxService {
         folderId: folderId,
       );
 
-      return uploadedFile != null ? UploadStatus.uploadSuccess : UploadStatus.uploadFailed;
+      return uploadedFile != null
+          ? UploadStatus.uploadSuccess
+          : UploadStatus.uploadFailed;
     } catch (e) {
       debugPrint('Upload error: $e');
       return UploadStatus.uploadFailed;

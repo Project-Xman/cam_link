@@ -45,6 +45,123 @@ class ImageProcessingService extends GetxService {
     return AppValues.supportedImageFormats.contains('.$extension');
   }
 
+  /// Resize image bytes
+  Future<Uint8List> resizeImage(
+    Uint8List imageBytes,
+    int width,
+    int height, {
+    bool maintainAspectRatio = true,
+  }) async {
+    try {
+      final image = img.decodeImage(imageBytes);
+      if (image == null) {
+        throw ImageProcessingException.corruptedImage();
+      }
+
+      img.Image resized;
+      if (maintainAspectRatio) {
+        resized = img.copyResize(
+          image,
+          width: width,
+          height: height,
+          maintainAspect: true,
+        );
+      } else {
+        resized = img.copyResize(
+          image,
+          width: width,
+          height: height,
+        );
+      }
+
+      return Uint8List.fromList(img.encodeJpg(resized, quality: 85));
+    } catch (e) {
+      ErrorHandler.handleError(e, context: 'ImageProcessingService.resizeImage');
+      if (e is AppException) rethrow;
+      throw ImageProcessingException.processingFailed(e.toString());
+    }
+  }
+
+  /// Add text overlay to image
+  Future<Uint8List> addTextOverlay(
+    Uint8List imageBytes,
+    String text, {
+    String position = 'bottomRight',
+    double fontSize = 24.0,
+    int color = 0xFFFFFFFF,
+  }) async {
+    try {
+      final image = img.decodeImage(imageBytes);
+      if (image == null) {
+        throw ImageProcessingException.corruptedImage();
+      }
+
+      // Calculate text position
+      int x, y;
+      switch (position) {
+        case 'topLeft':
+          x = 10;
+          y = 10;
+          break;
+        case 'topRight':
+          x = image.width - (text.length * fontSize ~/ 2) - 10;
+          y = 10;
+          break;
+        case 'bottomLeft':
+          x = 10;
+          y = image.height - fontSize.toInt() - 10;
+          break;
+        case 'bottomRight':
+          x = image.width - (text.length * fontSize ~/ 2) - 10;
+          y = image.height - fontSize.toInt() - 10;
+          break;
+        case 'center':
+          x = (image.width - (text.length * fontSize ~/ 2)) ~/ 2;
+          y = (image.height - fontSize.toInt()) ~/ 2;
+          break;
+        default:
+          x = image.width - (text.length * fontSize ~/ 2) - 10;
+          y = image.height - fontSize.toInt() - 10;
+      }
+
+      // Draw text (simplified - in a real app you'd use a proper text rendering library)
+      final textImage = img.drawString(
+        image,
+        text,
+        font: img.arial24,
+        x: x,
+        y: y,
+        color: img.ColorRgb8(255, 255, 255),
+      );
+
+      return Uint8List.fromList(img.encodeJpg(textImage, quality: 85));
+    } catch (e) {
+      ErrorHandler.handleError(e, context: 'ImageProcessingService.addTextOverlay');
+      if (e is AppException) rethrow;
+      throw ImageProcessingException.processingFailed(e.toString());
+    }
+  }
+
+  /// Compress image with specified quality
+  Future<Uint8List> compressImage(
+    Uint8List imageBytes, {
+    double quality = 0.8,
+  }) async {
+    try {
+      final image = img.decodeImage(imageBytes);
+      if (image == null) {
+        throw ImageProcessingException.corruptedImage();
+      }
+
+      final qualityInt = (quality * 100).round();
+      return Uint8List.fromList(img.encodeJpg(image, quality: qualityInt));
+    } catch (e) {
+      ErrorHandler.handleError(e, context: 'ImageProcessingService.compressImage');
+      if (e is AppException) rethrow;
+      throw ImageProcessingException.processingFailed(e.toString());
+    }
+  }
+
   /// Process image to bytes without saving to disk
   Future<Uint8List> processImageToBytes({
     required String filePath,

@@ -23,7 +23,7 @@ class HomePage extends GetView<HomeController> {
         if (controller.isLoading) {
           return const LoadingWidget(message: 'Initializing...');
         }
-        
+
         return CustomScrollView(
           slivers: [
             _buildAppBar(context),
@@ -76,9 +76,9 @@ class HomePage extends GetView<HomeController> {
           AppStrings.appName,
           textAlign: TextAlign.center,
           style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-            color: Theme.of(context).colorScheme.onPrimaryContainer,
-            fontWeight: FontWeight.bold,
-          ),
+                color: Theme.of(context).colorScheme.onPrimaryContainer,
+                fontWeight: FontWeight.bold,
+              ),
         ),
         titlePadding: const EdgeInsets.only(bottom: 16.0),
         centerTitle: true,
@@ -110,7 +110,7 @@ class HomePage extends GetView<HomeController> {
     return Obx(() {
       // Get current user from Appwrite auth service
       final currentUser = AppwriteAuthService.to.currentUser;
-      
+
       if (currentUser != null) {
         return Card(
           child: Padding(
@@ -128,16 +128,19 @@ class HomePage extends GetView<HomeController> {
                     children: [
                       Text(
                         _getUserGreeting(currentUser.name),
-                        style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+                        style:
+                            Theme.of(context).textTheme.headlineSmall?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                ),
                       ),
                       const SizedBox(height: 4),
                       Text(
                         'Ready to upload your photos?',
                         style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurfaceVariant,
+                            ),
                       ),
                     ],
                   ),
@@ -157,7 +160,8 @@ class HomePage extends GetView<HomeController> {
                         break;
                     }
                   },
-                  itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
+                  itemBuilder: (BuildContext context) =>
+                      <PopupMenuEntry<String>>[
                     const PopupMenuItem<String>(
                       value: 'profile',
                       child: ListTile(
@@ -201,16 +205,16 @@ class HomePage extends GetView<HomeController> {
                 Text(
                   'Welcome to ${AppStrings.appName}',
                   style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+                        fontWeight: FontWeight.bold,
+                      ),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 8),
                 Text(
                   'Connect with Google to start uploading and managing your photos',
                   style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: AppValues.paddingLarge),
@@ -238,38 +242,62 @@ class HomePage extends GetView<HomeController> {
         Text(
           'System Status',
           style: Theme.of(context).textTheme.titleLarge?.copyWith(
-            fontWeight: FontWeight.bold,
-          ),
+                fontWeight: FontWeight.bold,
+              ),
         ),
         const SizedBox(height: AppValues.paddingMedium),
         Obx(() => Row(
-          children: [
-            Expanded(
-              child: StatusCard(
-                title: 'Authentication',
-                status: controller.authStatus.displayName,
-                icon: controller.isSignedIn ? Icons.check_circle : Icons.account_circle_outlined,
-                isPositive: controller.isSignedIn,
-              ),
-            ),
-            const SizedBox(width: AppValues.paddingMedium),
-            Expanded(
-              child: StatusCard(
-                title: 'Approval Status',
-                status: _getApprovalStatus(),
-                icon: _getApprovalIcon(),
-                isPositive: _isApprovalPositive(),
-              ),
-            ),
-          ],
-        )),
+              children: [
+                Expanded(
+                  child: StatusCard(
+                    title: 'Authentication',
+                    status: controller.authStatus.displayName,
+                    icon: controller.isSignedIn
+                        ? Icons.check_circle
+                        : Icons.account_circle_outlined,
+                    isPositive: controller.isSignedIn,
+                  ),
+                ),
+                const SizedBox(width: AppValues.paddingMedium),
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () async {
+                      // Refresh approval status when tapped
+                      try {
+                        final approvalService = ApprovalService.to;
+                        await approvalService.forceCheckApproval();
+                        Get.snackbar(
+                          'Status Updated',
+                          'Approval status has been refreshed',
+                          snackPosition: SnackPosition.BOTTOM,
+                          duration: const Duration(seconds: 2),
+                        );
+                      } catch (e) {
+                        Get.snackbar(
+                          'Error',
+                          'Failed to refresh approval status',
+                          snackPosition: SnackPosition.BOTTOM,
+                          backgroundColor: Get.theme.colorScheme.errorContainer,
+                        );
+                      }
+                    },
+                    child: StatusCard(
+                      title: 'Approval Status',
+                      status: _getApprovalStatus(),
+                      icon: _getApprovalIcon(),
+                      isPositive: _isApprovalPositive(),
+                    ),
+                  ),
+                ),
+              ],
+            )),
         const SizedBox(height: AppValues.paddingMedium),
         Obx(() => StatusCard(
-          title: 'Connection',
-          status: controller.getConnectionStatusMessage(),
-          icon: controller.isConnected ? Icons.wifi : Icons.wifi_off,
-          isPositive: controller.isConnected,
-        )),
+              title: 'Connection',
+              status: controller.getConnectionStatusMessage(),
+              icon: controller.isConnected ? Icons.wifi : Icons.wifi_off,
+              isPositive: controller.isConnected,
+            )),
       ],
     );
   }
@@ -282,8 +310,8 @@ class HomePage extends GetView<HomeController> {
         Text(
           'Cloud Storage',
           style: Theme.of(context).textTheme.titleLarge?.copyWith(
-            fontWeight: FontWeight.bold,
-          ),
+                fontWeight: FontWeight.bold,
+              ),
         ),
         const SizedBox(height: AppValues.paddingMedium),
         const GoogleDriveWidget(),
@@ -298,7 +326,19 @@ class HomePage extends GetView<HomeController> {
       if (approvalService.isChecking.value) {
         return 'Checking...';
       }
-      return approvalService.isApproved.value ? 'Approved' : 'Pending';
+
+      // Also check the auth service for consistency
+      final authService = AppwriteAuthService.to;
+      final currentUser = authService.currentUser;
+
+      if (currentUser != null) {
+        // Use the approval service status as primary source
+        return approvalService.isApproved.value
+            ? 'Approved'
+            : 'Pending Approval';
+      }
+
+      return 'Not Authenticated';
     } catch (e) {
       return 'Unknown';
     }
@@ -335,8 +375,8 @@ class HomePage extends GetView<HomeController> {
         Text(
           'Features',
           style: Theme.of(context).textTheme.titleLarge?.copyWith(
-            fontWeight: FontWeight.bold,
-          ),
+                fontWeight: FontWeight.bold,
+              ),
         ),
         const SizedBox(height: AppValues.paddingMedium),
         GridView.count(
@@ -358,14 +398,14 @@ class HomePage extends GetView<HomeController> {
               icon: Icons.image,
               title: 'Image Processing',
               description: 'Resize and add overlays to your images',
-              onTap: () {}, // TODO: Navigate to image processing
+              onTap: () => Get.toNamed(AppRoutes.imageProcessing),
               enabled: controller.isSignedIn,
             ),
             FeatureCard(
               icon: Icons.cloud_upload,
               title: 'Cloud Upload',
               description: 'Upload processed images to Google Drive',
-              onTap: () {}, // TODO: Navigate to upload manager
+              onTap: () => Get.toNamed(AppRoutes.uploadManager),
               enabled: controller.isSignedIn && controller.isConnected,
             ),
             FeatureCard(
@@ -396,8 +436,8 @@ class HomePage extends GetView<HomeController> {
         Text(
           'Quick Actions',
           style: Theme.of(context).textTheme.titleLarge?.copyWith(
-            fontWeight: FontWeight.bold,
-          ),
+                fontWeight: FontWeight.bold,
+              ),
         ),
         const SizedBox(height: AppValues.paddingMedium),
         Wrap(
@@ -434,7 +474,7 @@ class HomePage extends GetView<HomeController> {
   String _getUserGreeting(String name) {
     final hour = DateTime.now().hour;
     final firstName = name.split(' ').first;
-    
+
     if (hour < 12) {
       return 'Good morning, $firstName!';
     } else if (hour < 17) {

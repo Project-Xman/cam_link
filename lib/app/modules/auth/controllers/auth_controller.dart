@@ -10,51 +10,16 @@ class AuthController extends GetxController {
   // Services
   late final AppwriteAuthService _authService;
 
-  // Form fields - Using nullable controllers to check if they're disposed
-  TextEditingController? _emailController;
-  TextEditingController? _passwordController;
-  TextEditingController? _nameController;
-  TextEditingController? _confirmPasswordController;
+  // Form fields - Initialize immediately to prevent disposal issues
+  late final TextEditingController emailController;
+  late final TextEditingController passwordController;
+  late final TextEditingController nameController;
+  late final TextEditingController confirmPasswordController;
 
   // Reactive variables
   final isLoading = false.obs;
   final isApproved = false.obs;
-  
-  // Disposal tracking
-  bool _isDisposed = false;
-
-  // Public getters with null checks and lazy initialization
-  TextEditingController get emailController {
-    if (_isDisposed) return TextEditingController();
-    if (_emailController == null) {
-      _emailController = TextEditingController();
-    }
-    return _emailController!;
-  }
-  
-  TextEditingController get passwordController {
-    if (_isDisposed) return TextEditingController();
-    if (_passwordController == null) {
-      _passwordController = TextEditingController();
-    }
-    return _passwordController!;
-  }
-  
-  TextEditingController get nameController {
-    if (_isDisposed) return TextEditingController();
-    if (_nameController == null) {
-      _nameController = TextEditingController();
-    }
-    return _nameController!;
-  }
-  
-  TextEditingController get confirmPasswordController {
-    if (_isDisposed) return TextEditingController();
-    if (_confirmPasswordController == null) {
-      _confirmPasswordController = TextEditingController();
-    }
-    return _confirmPasswordController!;
-  }
+  final _isDisposed = false.obs;
 
   @override
   void onInit() {
@@ -65,10 +30,10 @@ class AuthController extends GetxController {
 
   /// Initialize text editing controllers
   void _initializeControllers() {
-    _emailController = TextEditingController();
-    _passwordController = TextEditingController();
-    _nameController = TextEditingController();
-    _confirmPasswordController = TextEditingController();
+    emailController = TextEditingController();
+    passwordController = TextEditingController();
+    nameController = TextEditingController();
+    confirmPasswordController = TextEditingController();
   }
 
   /// Sign up a new user
@@ -82,9 +47,9 @@ class AuthController extends GetxController {
       await _authService.clearSession();
       
       await _authService.signUp(
-        email: _emailController?.text.trim() ?? '',
-        password: _passwordController?.text ?? '',
-        fullName: _nameController?.text.trim() ?? '',
+        email: emailController.text.trim(),
+        password: passwordController.text,
+        fullName: nameController.text.trim(),
       );
       
       // Show success message
@@ -124,8 +89,8 @@ class AuthController extends GetxController {
     try {
       isLoading.value = true;
       await _authService.signIn(
-        email: _emailController?.text.trim() ?? '',
-        password: _passwordController?.text ?? '',
+        email: emailController.text.trim(),
+        password: passwordController.text,
       );
       
       // Check if user is approved
@@ -155,7 +120,7 @@ class AuthController extends GetxController {
     } finally {
       isLoading.value = false;
       // Clear password field after submission
-      _passwordController?.clear();
+      passwordController.clear();
     }
   }
 
@@ -165,7 +130,7 @@ class AuthController extends GetxController {
 
     try {
       isLoading.value = true;
-      await _authService.resetPassword(_emailController?.text.trim() ?? '');
+      await _authService.resetPassword(emailController.text.trim());
       
       Get.snackbar(
         'Password Reset',
@@ -204,17 +169,7 @@ class AuthController extends GetxController {
 
   /// Validate sign up form
   bool _validateSignUpForm() {
-    // Check if controllers are disposed
-    if (_nameController == null || _emailController == null || _passwordController == null || _confirmPasswordController == null) {
-      Get.snackbar(
-        'Error',
-        'Form not initialized properly',
-        snackPosition: SnackPosition.BOTTOM,
-      );
-      return false;
-    }
-
-    if ((_nameController?.text.trim() ?? '').isEmpty) {
+    if (nameController.text.trim().isEmpty) {
       Get.snackbar(
         'Error',
         'Please enter your full name',
@@ -225,7 +180,7 @@ class AuthController extends GetxController {
 
     if (!_validateEmail()) return false;
 
-    if ((_passwordController?.text ?? '').length < 6) {
+    if (passwordController.text.length < 6) {
       Get.snackbar(
         'Error',
         'Password must be at least 6 characters',
@@ -234,7 +189,7 @@ class AuthController extends GetxController {
       return false;
     }
 
-    if ((_passwordController?.text ?? '') != (_confirmPasswordController?.text ?? '')) {
+    if (passwordController.text != confirmPasswordController.text) {
       Get.snackbar(
         'Error',
         'Passwords do not match',
@@ -248,19 +203,9 @@ class AuthController extends GetxController {
 
   /// Validate sign in form
   bool _validateSignInForm() {
-    // Check if controllers are disposed
-    if (_emailController == null || _passwordController == null) {
-      Get.snackbar(
-        'Error',
-        'Form not initialized properly',
-        snackPosition: SnackPosition.BOTTOM,
-      );
-      return false;
-    }
-
     if (!_validateEmail()) return false;
 
-    if ((_passwordController?.text ?? '').isEmpty) {
+    if (passwordController.text.isEmpty) {
       Get.snackbar(
         'Error',
         'Please enter your password',
@@ -274,17 +219,7 @@ class AuthController extends GetxController {
 
   /// Validate email
   bool _validateEmail() {
-    // Check if controller is disposed
-    if (_emailController == null) {
-      Get.snackbar(
-        'Error',
-        'Form not initialized properly',
-        snackPosition: SnackPosition.BOTTOM,
-      );
-      return false;
-    }
-
-    if ((_emailController?.text.trim() ?? '').isEmpty) {
+    if (emailController.text.trim().isEmpty) {
       Get.snackbar(
         'Error',
         'Please enter your email',
@@ -293,7 +228,7 @@ class AuthController extends GetxController {
       return false;
     }
 
-    if (!GetUtils.isEmail(_emailController?.text.trim() ?? '')) {
+    if (!GetUtils.isEmail(emailController.text.trim())) {
       Get.snackbar(
         'Error',
         'Please enter a valid email address',
@@ -307,10 +242,12 @@ class AuthController extends GetxController {
 
   /// Clear form fields
   void _clearFormFields() {
-    _emailController?.clear();
-    _passwordController?.clear();
-    _nameController?.clear();
-    _confirmPasswordController?.clear();
+    if (!_isDisposed.value) {
+      emailController.clear();
+      passwordController.clear();
+      nameController.clear();
+      confirmPasswordController.clear();
+    }
   }
 
   /// Public method to clear form
@@ -335,20 +272,14 @@ class AuthController extends GetxController {
 
   @override
   void onClose() {
-    // Mark as disposed first
-    _isDisposed = true;
+    // Mark as disposed to prevent further operations
+    _isDisposed.value = true;
     
     // Dispose controllers safely
-    _emailController?.dispose();
-    _passwordController?.dispose();
-    _nameController?.dispose();
-    _confirmPasswordController?.dispose();
-    
-    // Set to null to prevent access after disposal
-    _emailController = null;
-    _passwordController = null;
-    _nameController = null;
-    _confirmPasswordController = null;
+    emailController.dispose();
+    passwordController.dispose();
+    nameController.dispose();
+    confirmPasswordController.dispose();
     
     super.onClose();
   }

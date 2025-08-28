@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../data/services/google_drive_service.dart';
@@ -25,26 +26,26 @@ class GoogleDriveWidget extends GetView<GoogleDriveService> {
                 Text(
                   'Google Drive',
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+                        fontWeight: FontWeight.bold,
+                      ),
                 ),
                 const Spacer(),
-                Obx(() => controller.isLoading.value
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const SizedBox.shrink(),
+                Obx(
+                  () => controller.isLoading.value
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const SizedBox.shrink(),
                 ),
               ],
             ),
             const SizedBox(height: AppValues.paddingMedium),
-            
             Obx(() {
               if (!controller.platformSupported.value) {
                 return _buildPlatformNotSupportedState(context);
-              } else if (!controller.isConnected.value) {
+              } else if (!controller.isConnected) {
                 return _buildDisconnectedState(context);
               } else {
                 return _buildConnectedState(context);
@@ -64,8 +65,8 @@ class GoogleDriveWidget extends GetView<GoogleDriveService> {
         Text(
           'Not connected to Google Drive',
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
-          ),
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
         ),
         const SizedBox(height: AppValues.paddingMedium),
         SizedBox(
@@ -99,40 +100,130 @@ class GoogleDriveWidget extends GetView<GoogleDriveService> {
         // Connection status
         Row(
           children: [
-            const Icon(
-              Icons.check_circle,
-              color: Colors.green,
-              size: 16,
+            GestureDetector(
+              onTap: () async{
+                  await controller.loadAvailableDrives();
+                  await controller.loadStorageInfo();
+              },
+              child: const Icon(
+                Icons.check_circle,
+                color: Colors.green,
+                size: 16,
+              ),
             ),
             const SizedBox(width: AppValues.paddingSmall),
             Text(
-              'Connected as ${controller.currentUser?.displayName ?? 'Unknown'}',
+              'Connected as ${controller.currentUser?.name ?? 'Unknown'}',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Colors.green,
-                fontWeight: FontWeight.w500,
-              ),
+                    color: Colors.green,
+                    fontWeight: FontWeight.w500,
+                  ),
             ),
           ],
         ),
         const SizedBox(height: AppValues.paddingMedium),
-        
+
+        // Storage information
+        Obx(() {
+          // Debug logging
+          debugPrint('Storage info widget update: ${controller.storageInfo.value != null ? 'has data' : 'no data'}');
+          
+          if (controller.storageInfo.value != null) {
+            return Container(
+              padding: const EdgeInsets.all(AppValues.paddingMedium),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.3),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.storage,
+                        size: 16,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                      const SizedBox(width: AppValues.paddingSmall),
+                      Text(
+                        'Storage Usage',
+                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: AppValues.paddingSmall),
+                  Text(
+                    controller.formattedStorageUsage,
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
+                  const SizedBox(height: AppValues.paddingSmall),
+                  LinearProgressIndicator(
+                    value: controller.storageUsagePercentage / 100,
+                    backgroundColor: Theme.of(context).colorScheme.surfaceVariant,
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      controller.storageUsagePercentage > 80
+                          ? Colors.red
+                          : controller.storageUsagePercentage > 60
+                              ? Colors.orange
+                              : Theme.of(context).colorScheme.primary,
+                    ),
+                  ),
+                  const SizedBox(height: AppValues.paddingSmall),
+                  Text(
+                    '${controller.storageUsagePercentage.toStringAsFixed(1)}% used',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                  ),
+                ],
+              ),
+            );
+          } else {
+            return Container(
+              padding: const EdgeInsets.all(AppValues.paddingMedium),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.3),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                children: [
+                  const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                  const SizedBox(width: AppValues.paddingSmall),
+                  Text(
+                    'Loading storage info...',
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
+                ],
+              ),
+            );
+          }
+        }),
+        const SizedBox(height: AppValues.paddingMedium),
+
         // Available drives
         Obx(() {
           if (controller.availableDrives.isEmpty) {
             return const Text('Loading drives...');
           }
-          
+
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
                 'Available Drives:',
                 style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+                      fontWeight: FontWeight.bold,
+                    ),
               ),
               const SizedBox(height: AppValues.paddingSmall),
-              
+
               // Drive selection dropdown
               DropdownButtonFormField<String>(
                 value: controller.currentDrive.value?.id,
@@ -147,15 +238,16 @@ class GoogleDriveWidget extends GetView<GoogleDriveService> {
                   return DropdownMenuItem<String>(
                     value: drive.id,
                     child: Row(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
                         Icon(
-                          drive.id == 'my-drive' 
-                            ? Icons.folder_special 
-                            : Icons.folder_shared,
+                          drive.id == 'my-drive'
+                              ? Icons.folder_special
+                              : Icons.folder_shared,
                           size: 16,
                         ),
                         const SizedBox(width: AppValues.paddingSmall),
-                        Expanded(
+                        Flexible(
                           child: Text(
                             drive.name ?? 'Unknown Drive',
                             overflow: TextOverflow.ellipsis,
@@ -174,13 +266,24 @@ class GoogleDriveWidget extends GetView<GoogleDriveService> {
                 },
               ),
               const SizedBox(height: AppValues.paddingMedium),
-              
+
               // Action buttons
               Row(
                 children: [
                   Expanded(
                     child: OutlinedButton.icon(
-                      onPressed: controller.loadAvailableDrives,
+                      onPressed: () async {
+                        debugPrint('Manual refresh button pressed');
+                        try {
+                          await Future.wait([
+                            controller.loadAvailableDrives(),
+                            controller.loadStorageInfo(),
+                          ]);
+                          debugPrint('Manual refresh completed');
+                        } catch (e) {
+                          debugPrint('Manual refresh failed: $e');
+                        }
+                      },
                       icon: const Icon(Icons.refresh),
                       label: const Text('Refresh'),
                     ),
@@ -196,7 +299,8 @@ class GoogleDriveWidget extends GetView<GoogleDriveService> {
                             'Disconnect Error',
                             e.toString(),
                             snackPosition: SnackPosition.BOTTOM,
-                            backgroundColor: Get.theme.colorScheme.errorContainer,
+                            backgroundColor:
+                                Get.theme.colorScheme.errorContainer,
                           );
                         }
                       },
@@ -230,8 +334,8 @@ class GoogleDriveWidget extends GetView<GoogleDriveService> {
               child: Text(
                 'Google Drive integration is not available on this platform',
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.error,
-                ),
+                      color: Theme.of(context).colorScheme.error,
+                    ),
               ),
             ),
           ],
@@ -240,8 +344,8 @@ class GoogleDriveWidget extends GetView<GoogleDriveService> {
         Text(
           'Please use a supported device (Android, iOS, macOS, or Web) to access Google Drive features.',
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
-          ),
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
         ),
       ],
     );

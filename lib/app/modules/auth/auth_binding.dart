@@ -6,12 +6,8 @@ import '../../data/services/appwrite_auth_service.dart';
 class AuthBinding extends Bindings {
   @override
   void dependencies() {
-    // Register Appwrite Auth Service
-    if (!Get.isRegistered<AppwriteAuthService>()) {
-      Get.put(AppwriteAuthService(), permanent: true);
-    }
-    
-    // Register Auth Controller
-    Get.put(AuthController());
+    // Services and controllers are already registered in InitialBinding
+    // This binding ensures they're available for auth pages
+    // No need to register again since they're permanent
   }
 }

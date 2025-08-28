@@ -14,6 +14,10 @@ import '../modules/auth/pages/admin_approval_page.dart';
 import '../modules/auth/auth_binding.dart';
 import '../modules/home/views/qr_code_form_page.dart';
 import '../modules/home/qr_code_binding.dart';
+import '../modules/image_processing/image_processing_page.dart';
+import '../modules/image_processing/image_processing_binding.dart';
+import '../modules/upload_manager/upload_manager_page.dart';
+import '../modules/upload_manager/upload_manager_binding.dart';
 import '../core/middleware/approval_middleware.dart';
 
 /// App routes configuration
@@ -27,69 +31,86 @@ class AppRoutes {
   static const String forgotPassword = '/auth/forgot-password';
   static const String adminApproval = '/auth/admin-approval';
   static const String qrCodeForm = '/qr-code-form';
+  static const String imageProcessing = '/image-processing';
+  static const String uploadManager = '/upload-manager';
   static const String settings = '/settings';
   static const String about = '/about';
 
   /// Get pages configuration for GetX navigation
   static List<GetPage> get pages => [
-    GetPage(
-      name: splash,
-      page: () => const SplashPage(),
-      binding: SplashBinding(),
-      transition: Transition.fade,
-    ),
-    GetPage(
-      name: home,
-      page: () => const HomePage(),
-      binding: HomeBinding(),
-      transition: Transition.cupertino,
-      middlewares: [ApprovalMiddleware()],
-    ),
-    GetPage(
-      name: fileExplorer,
-      page: () => const FileExplorerPage(),
-      binding: FileExplorerBinding(),
-      transition: Transition.cupertino,
-    ),
-    GetPage(
-      name: settings,
-      page: () => const SettingsPage(),
-      binding: SettingsBinding(),
-      transition: Transition.cupertino,
-    ),
-    // Authentication routes
-    GetPage(
-      name: login,
-      page: () => const LoginPage(),
-      binding: AuthBinding(),
-      transition: Transition.cupertino,
-    ),
-    GetPage(
-      name: signup,
-      page: () => const SignupPage(),
-      binding: AuthBinding(),
-      transition: Transition.cupertino,
-    ),
-    GetPage(
-      name: forgotPassword,
-      page: () => const ForgotPasswordPage(),
-      binding: AuthBinding(),
-      transition: Transition.cupertino,
-    ),
-    GetPage(
-      name: adminApproval,
-      page: () => const AdminApprovalPage(),
-      binding: AuthBinding(),
-      transition: Transition.cupertino,
-    ),
-    GetPage(
-      name: qrCodeForm,
-      page: () => const QRCodeFormPage(),
-      binding: QRCodeBinding(),
-      transition: Transition.cupertino,
-      middlewares: [ApprovalMiddleware()],
-    ),
-  ];
+        GetPage(
+          name: splash,
+          page: () => const SplashPage(),
+          binding: SplashBinding(),
+          transition: Transition.fade,
+        ),
+        GetPage(
+          name: home,
+          page: () => const HomePage(),
+          binding: HomeBinding(),
+          transition: Transition.cupertino,
+          middlewares: [ApprovalMiddleware()],
+        ),
+        GetPage(
+          name: fileExplorer,
+          page: () => const FileExplorerPage(),
+          binding: FileExplorerBinding(),
+          transition: Transition.cupertino,
+          middlewares: [ApprovalMiddleware()],
+        ),
+        GetPage(
+          name: settings,
+          page: () => const SettingsPage(),
+          binding: SettingsBinding(),
+          transition: Transition.cupertino,
+        ),
+        // Authentication routes
+        GetPage(
+          name: login,
+          page: () => const LoginPage(),
+          binding: AuthBinding(),
+          transition: Transition.cupertino,
+        ),
+        GetPage(
+          name: signup,
+          page: () => const SignupPage(),
+          binding: AuthBinding(),
+          transition: Transition.cupertino,
+        ),
+        GetPage(
+          name: forgotPassword,
+          page: () => const ForgotPasswordPage(),
+          binding: AuthBinding(),
+          transition: Transition.cupertino,
+        ),
+        GetPage(
+          name: adminApproval,
+          page: () => const AdminApprovalPage(),
+          binding: AuthBinding(),
+          transition: Transition.cupertino,
+        ),
+        GetPage(
+          name: qrCodeForm,
+          page: () => const QRCodeFormPage(),
+          binding: QRCodeBinding(),
+          transition: Transition.cupertino,
+          middlewares: [ApprovalMiddleware()],
+        ),
+        GetPage(
+          name: imageProcessing,
+          page: () => const ImageProcessingPage(),
+          binding: ImageProcessingBinding(),
+          transition: Transition.cupertino,
+          middlewares: [ApprovalMiddleware()],
+        ),
+        GetPage(
+          name: uploadManager,
+          page: () => const UploadManagerPage(),
+          binding: UploadManagerBinding(),
+          transition: Transition.cupertino,
+          middlewares: [ApprovalMiddleware()],
+        ),
+      ];
 
   /// Navigation methods
   static void toSplash() => Get.offAllNamed(splash);
@@ -101,6 +122,8 @@ class AppRoutes {
   static void toForgotPassword() => Get.toNamed(forgotPassword);
   static void toAdminApproval() => Get.offAllNamed(adminApproval);
   static void toQRCodeForm() => Get.toNamed(qrCodeForm);
+  static void toImageProcessing() => Get.toNamed(imageProcessing);
+  static void toUploadManager() => Get.toNamed(uploadManager);
   static void back() => Get.back();
 
   /// Check if current route matches
@@ -113,4 +136,6 @@ class AppRoutes {
   static bool get isForgotPassword => Get.currentRoute == forgotPassword;
   static bool get isAdminApproval => Get.currentRoute == adminApproval;
   static bool get isQRCodeForm => Get.currentRoute == qrCodeForm;
+  static bool get isImageProcessing => Get.currentRoute == imageProcessing;
+  static bool get isUploadManager => Get.currentRoute == uploadManager;
 }

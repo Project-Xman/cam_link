@@ -193,7 +193,7 @@ class ErrorHandler {
       lineLength: 120,
       colors: true,
       printEmojis: true,
-      printTime: true,
+      dateTimeFormat: DateTimeFormat.onlyTimeAndSinceStart,
     ),
   );
 
@@ -259,6 +259,11 @@ class ErrorHandler {
         case 'NOT_SIGNED_IN':
           return 'Please sign in to continue.';
         case 'SIGN_IN_FAILED':
+          // Check if it's a redirect URI error
+          if (error.message.contains('redirect_uri_mismatch') || 
+              error.message.contains('invalid request')) {
+            return 'OAuth configuration error. The redirect URI needs to be configured in Google Console. Please add "http://localhost:8080" to your OAuth client\'s authorized redirect URIs.';
+          }
           return 'Sign in failed. Please check your credentials and try again.';
         case 'TOKEN_EXPIRED':
           return 'Your session has expired. Please sign in again.';
@@ -321,6 +326,8 @@ class ErrorHandler {
     logError('PlatformException occurred', error: error, context: 'ErrorHandler._handlePlatformException');
     
     switch (error.code) {
+      case 'CANCELED':
+        return 'Sign in was cancelled. Please try again.';
       case 'channel-error':
         return 'Connection error occurred. Please restart the app and try again.';
       case 'permission_denied':
@@ -337,6 +344,11 @@ class ErrorHandler {
       case 'invalid_image':
         return 'Invalid image file. Please select a valid image.';
       default:
+        // Check if it's a redirect URI mismatch error
+        if (error.message?.contains('redirect_uri_mismatch') == true || 
+            error.message?.contains('invalid request') == true) {
+          return 'OAuth configuration error. Please contact the developer to configure the redirect URI in Google Console.';
+        }
         return 'Platform error occurred: ${error.message ?? 'Unknown error'}. Please try again.';
     }
   }

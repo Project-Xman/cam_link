@@ -8,6 +8,8 @@ import '../data/services/image_processing_service.dart';
 import '../data/services/appwrite_auth_service.dart';
 import '../data/services/approval_service.dart';
 import '../controllers/app_controller.dart';
+import '../modules/home/controllers/home_controller.dart';
+import '../modules/auth/controllers/auth_controller.dart';
 
 /// Initial bindings that are loaded when the app starts
 class InitialBinding extends Bindings {
@@ -25,19 +27,25 @@ class InitialBinding extends Bindings {
     // 3. Appwrite authentication service
     Get.put(AppwriteAuthService(), permanent: true);
 
-    // 4. Approval monitoring service
+    // 4. Auth controller (depends on AppwriteAuthService)
+    Get.put(AuthController(), permanent: true);
+
+    // 5. Approval monitoring service
     Get.put(ApprovalService(), permanent: true);
 
-    // 5. Original Firebase authentication service (if needed)
+    // 6. Original Firebase authentication service (if needed)
     Get.put(AuthService(), permanent: true);
 
-    // 6. Google Drive service
+    // 7. Google Drive service
     Get.put(GoogleDriveService(), permanent: true);
 
-    // 7. Independent services
+    // 8. Independent services
     Get.put(ImageProcessingService(), permanent: true);
 
-    // 8. App controller (depends on other services)
+    // 9. App controller (depends on other services)
     Get.put(AppController(), permanent: true);
+
+    // 10. Home controller (depends on other services)
+    Get.lazyPut(() => HomeController());
   }
 }

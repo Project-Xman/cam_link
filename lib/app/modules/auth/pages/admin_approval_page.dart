@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../controllers/auth_controller.dart';
-import '../../../core/values/app_strings.dart';
 import '../../../core/values/app_values.dart';
 import '../../../data/services/appwrite_auth_service.dart';
 import '../../../data/services/approval_service.dart';
@@ -121,23 +120,48 @@ class AdminApprovalPage extends GetView<AuthController> {
                   color: Theme.of(context).colorScheme.surfaceContainerHighest,
                   child: Padding(
                     padding: const EdgeInsets.all(AppValues.paddingMedium),
-                    child: Row(
+                    child: Column(
                       children: [
-                        Icon(
-                          approvalService.isChecking.value 
-                            ? Icons.hourglass_empty 
-                            : Icons.info_outline,
-                          color: Theme.of(context).colorScheme.primary,
+                        Row(
+                          children: [
+                            Icon(
+                              approvalService.isChecking.value 
+                                ? Icons.hourglass_empty 
+                                : Icons.info_outline,
+                              color: Theme.of(context).colorScheme.primary,
+                            ),
+                            const SizedBox(width: AppValues.paddingSmall),
+                            Expanded(
+                              child: Text(
+                                approvalService.isChecking.value
+                                  ? 'Checking approval status...'
+                                  : 'Status is checked automatically every 30 seconds',
+                                style: Theme.of(context).textTheme.bodyMedium,
+                              ),
+                            ),
+                          ],
                         ),
-                        const SizedBox(width: AppValues.paddingSmall),
-                        Expanded(
-                          child: Text(
-                            approvalService.isChecking.value
-                              ? 'Checking approval status...'
-                              : 'Status is checked automatically every 30 seconds',
-                            style: Theme.of(context).textTheme.bodyMedium,
+                        if (approvalService.isApproved.value)
+                          Padding(
+                            padding: const EdgeInsets.only(top: AppValues.paddingSmall),
+                            child: Row(
+                              children: [
+                                const Icon(
+                                  Icons.check_circle,
+                                  color: Colors.green,
+                                  size: 16,
+                                ),
+                                const SizedBox(width: AppValues.paddingSmall),
+                                Text(
+                                  'Account approved! Redirecting...',
+                                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    color: Colors.green,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
-                        ),
                       ],
                     ),
                   ),
@@ -188,6 +212,12 @@ class AdminApprovalPage extends GetView<AuthController> {
       try {
         final approvalService = ApprovalService.to;
         await approvalService.forceCheckApproval();
+        
+        // Check if user is now approved
+        if (approvalService.isApproved.value) {
+          // User is now approved - the approval service will handle navigation
+          return;
+        }
       } catch (e) {
         // Fallback to direct check
         final isApproved = await AppwriteAuthService.to.isUserApproved();
@@ -195,6 +225,12 @@ class AdminApprovalPage extends GetView<AuthController> {
         if (isApproved) {
           // User is now approved - navigate to home screen
           Get.offAllNamed('/home');
+          Get.snackbar(
+            'Account Approved!',
+            'Your account has been approved. Welcome!',
+            snackPosition: SnackPosition.TOP,
+            backgroundColor: Get.theme.colorScheme.primaryContainer,
+          );
           return;
         }
       }
