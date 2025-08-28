@@ -37,7 +37,7 @@ class UploadManagerController extends GetxController {
   final isUploading = false.obs;
   final images = <SelectedImage>[].obs;
   final uploadStatuses = <UploadStatus>[].obs;
-  
+
   // Upload options
   final createDateFolders = true.obs;
   final overwriteExisting = false.obs;
@@ -48,12 +48,16 @@ class UploadManagerController extends GetxController {
 
   // Getters
   bool get hasImages => images.isNotEmpty;
-  bool get hasCompletedUploads => uploadStatuses.any((status) => status.isCompleted);
+  bool get hasCompletedUploads =>
+      uploadStatuses.any((status) => status.isCompleted);
   int get totalImages => images.length;
-  int get completedUploads => uploadStatuses.where((status) => status.isCompleted).length;
-  int get failedUploads => uploadStatuses.where((status) => status.isFailed).length;
+  int get completedUploads =>
+      uploadStatuses.where((status) => status.isCompleted).length;
+  int get failedUploads =>
+      uploadStatuses.where((status) => status.isFailed).length;
   int get remainingUploads => totalImages - completedUploads - failedUploads;
-  double get overallProgress => totalImages > 0 ? completedUploads / totalImages : 0.0;
+  double get overallProgress =>
+      totalImages > 0 ? completedUploads / totalImages : 0.0;
 
   @override
   void onInit() {
@@ -211,7 +215,7 @@ class UploadManagerController extends GetxController {
       // Show completion message
       final completed = completedUploads;
       final failed = failedUploads;
-      
+
       if (failed == 0) {
         Get.snackbar(
           'Upload Complete',
@@ -227,7 +231,6 @@ class UploadManagerController extends GetxController {
           backgroundColor: Get.theme.colorScheme.errorContainer,
         );
       }
-
     } catch (e) {
       _handleError('Upload process failed', e);
     } finally {
@@ -240,7 +243,7 @@ class UploadManagerController extends GetxController {
     if (index >= images.length) return;
 
     final image = images[index];
-    
+
     try {
       // Update status to uploading
       uploadStatuses[index] = UploadStatus(
@@ -250,7 +253,7 @@ class UploadManagerController extends GetxController {
 
       // Generate filename
       final filename = _generateFilename(image.name);
-      
+
       // Generate folder name
       final folderName = _generateFolderName();
 
@@ -288,7 +291,6 @@ class UploadManagerController extends GetxController {
           error: 'Upload failed',
         );
       }
-
     } catch (e) {
       uploadStatuses[index] = UploadStatus(
         status: UploadState.failed,
@@ -327,7 +329,8 @@ class UploadManagerController extends GetxController {
     // Add date subfolder if enabled
     if (createDateFolders.value) {
       final now = DateTime.now();
-      final dateFolder = '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+      final dateFolder =
+          '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
       folderName = '$folderName/$dateFolder';
     }
 
@@ -337,7 +340,7 @@ class UploadManagerController extends GetxController {
   /// Handle errors
   void _handleError(String message, dynamic error) {
     ErrorHandler.handleError(error, context: 'UploadManagerController');
-    
+
     Get.snackbar(
       'Error',
       message,
