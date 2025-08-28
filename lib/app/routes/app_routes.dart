@@ -18,6 +18,8 @@ import '../modules/image_processing/image_processing_page.dart';
 import '../modules/image_processing/image_processing_binding.dart';
 import '../modules/upload_manager/upload_manager_page.dart';
 import '../modules/upload_manager/upload_manager_binding.dart';
+import '../modules/pose_suggestions/pose_suggestions_page.dart';
+import '../modules/camera_helper/camera_helper_page.dart';
 import '../core/middleware/approval_middleware.dart';
 
 /// App routes configuration
@@ -33,6 +35,8 @@ class AppRoutes {
   static const String qrCodeForm = '/qr-code-form';
   static const String imageProcessing = '/image-processing';
   static const String uploadManager = '/upload-manager';
+  static const String poseSuggestions = '/pose-suggestions';
+  static const String cameraHelper = '/camera-helper';
   static const String settings = '/settings';
   static const String about = '/about';
 
@@ -110,6 +114,18 @@ class AppRoutes {
           transition: Transition.cupertino,
           middlewares: [ApprovalMiddleware()],
         ),
+        GetPage(
+          name: poseSuggestions,
+          page: () => const PoseSuggestionsPage(),
+          transition: Transition.cupertino,
+          middlewares: [ApprovalMiddleware()],
+        ),
+        GetPage(
+          name: cameraHelper,
+          page: () => const CameraHelperPage(),
+          transition: Transition.cupertino,
+          middlewares: [ApprovalMiddleware()],
+        ),
       ];
 
   /// Navigation methods
@@ -124,6 +140,8 @@ class AppRoutes {
   static void toQRCodeForm() => Get.toNamed(qrCodeForm);
   static void toImageProcessing() => Get.toNamed(imageProcessing);
   static void toUploadManager() => Get.toNamed(uploadManager);
+  static void toPoseSuggestions() => Get.toNamed(poseSuggestions);
+  static void toCameraHelper() => Get.toNamed(cameraHelper);
   static void back() => Get.back();
 
   /// Check if current route matches
@@ -138,4 +156,5 @@ class AppRoutes {
   static bool get isQRCodeForm => Get.currentRoute == qrCodeForm;
   static bool get isImageProcessing => Get.currentRoute == imageProcessing;
   static bool get isUploadManager => Get.currentRoute == uploadManager;
+  static bool get isPoseSuggestions => Get.currentRoute == poseSuggestions;
 }

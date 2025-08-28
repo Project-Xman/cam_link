@@ -7,6 +7,12 @@ import '../data/services/google_drive_service.dart';
 import '../data/services/image_processing_service.dart';
 import '../data/services/appwrite_auth_service.dart';
 import '../data/services/approval_service.dart';
+import '../data/services/hotspot_service.dart';
+import '../data/services/ftp_server_service.dart';
+import '../data/services/gemini_pose_service.dart';
+import '../data/services/camera_analysis_service.dart';
+import '../data/services/sun_weather_service.dart';
+import '../data/services/sensor_availability_service.dart';
 import '../controllers/app_controller.dart';
 import '../modules/home/controllers/home_controller.dart';
 import '../modules/auth/controllers/auth_controller.dart';
@@ -33,7 +39,7 @@ class InitialBinding extends Bindings {
     // 5. Approval monitoring service
     Get.put(ApprovalService(), permanent: true);
 
-    // 6. Original Firebase authentication service (if needed)
+    // 6. Google OAuth service (for Google Drive integration)
     Get.put(AuthService(), permanent: true);
 
     // 7. Google Drive service
@@ -42,10 +48,20 @@ class InitialBinding extends Bindings {
     // 8. Independent services
     Get.put(ImageProcessingService(), permanent: true);
 
-    // 9. App controller (depends on other services)
+    // 9. Hotspot and FTP services
+    Get.put(HotspotService(), permanent: true);
+    Get.put(FtpServerService(), permanent: true);
+
+    // 10. Sensor and AI services
+    Get.put(SensorAvailabilityService(), permanent: true);
+    Get.put(GeminiPoseService(), permanent: true);
+    Get.put(CameraAnalysisService(), permanent: true);
+    Get.put(SunWeatherService(), permanent: true);
+
+    // 11. App controller (depends on other services)
     Get.put(AppController(), permanent: true);
 
-    // 10. Home controller (depends on other services)
+    // 12. Home controller (depends on other services)
     Get.lazyPut(() => HomeController());
   }
 }

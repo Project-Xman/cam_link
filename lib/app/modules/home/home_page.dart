@@ -8,6 +8,10 @@ import '../../shared/widgets/user_avatar.dart';
 import '../../shared/widgets/status_card.dart';
 import '../../shared/widgets/feature_card.dart';
 import '../../shared/widgets/google_drive_widget.dart';
+import '../../shared/widgets/hotspot_card.dart';
+import '../../shared/widgets/ftp_card.dart';
+import '../../shared/widgets/pose_suggestions_card.dart';
+import '../../shared/widgets/camera_helper_card.dart';
 import '../../routes/app_routes.dart';
 import '../../data/services/appwrite_auth_service.dart';
 import '../../data/services/approval_service.dart';
@@ -36,6 +40,10 @@ class HomePage extends GetView<HomeController> {
                   _buildStatusSection(context),
                   const SizedBox(height: AppValues.paddingLarge),
                   _buildGoogleDriveSection(context),
+                  const SizedBox(height: AppValues.paddingLarge),
+                  _buildCameraLinkSection(context),
+                  const SizedBox(height: AppValues.paddingLarge),
+                  _buildAIFeaturesSection(context),
                   const SizedBox(height: AppValues.paddingLarge),
                   _buildFeaturesSection(context),
                   const SizedBox(height: AppValues.paddingLarge),
@@ -319,6 +327,44 @@ class HomePage extends GetView<HomeController> {
     );
   }
 
+  /// Build camera link section
+  Widget _buildCameraLinkSection(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Camera Link',
+          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+        ),
+        const SizedBox(height: AppValues.paddingMedium),
+        const HotspotCard(),
+        const SizedBox(height: AppValues.paddingMedium),
+        const FtpCard(),
+      ],
+    );
+  }
+
+  /// Build AI features section
+  Widget _buildAIFeaturesSection(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'AI Photography Assistant',
+          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+        ),
+        const SizedBox(height: AppValues.paddingMedium),
+        const PoseSuggestionsCard(),
+        const SizedBox(height: AppValues.paddingMedium),
+        const CameraHelperCard(),
+      ],
+    );
+  }
+
   /// Get approval status text
   String _getApprovalStatus() {
     try {
@@ -413,6 +459,20 @@ class HomePage extends GetView<HomeController> {
               title: 'QR Code Generator',
               description: 'Create custom QR codes with advanced options',
               onTap: () => Get.toNamed(AppRoutes.qrCodeForm),
+              enabled: controller.isSignedIn,
+            ),
+            FeatureCard(
+              icon: Icons.auto_awesome,
+              title: 'AI Pose Suggestions',
+              description: 'Get creative photography pose ideas from AI',
+              onTap: () => Get.toNamed(AppRoutes.poseSuggestions),
+              enabled: controller.isSignedIn,
+            ),
+            FeatureCard(
+              icon: Icons.camera_enhance,
+              title: 'Camera Helper',
+              description: 'Real-time camera analysis and photography assistant',
+              onTap: () => Get.toNamed(AppRoutes.cameraHelper),
               enabled: controller.isSignedIn,
             ),
             FeatureCard(
