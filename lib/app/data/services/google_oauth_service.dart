@@ -427,13 +427,13 @@ class AuthService extends GetxService {
         'profile',
         'email',
       ];
-    final authorization =
-      await user.authorizationClient.authorizationForScopes(scopes);
-    // If not granted, request interactively
-    final authResult = authorization ?? await user.authorizationClient.authorizeScopes(scopes);
-    await _storage.write(
-      key: 'accessToken', value: authResult.accessToken);
-    return authResult.accessToken;
+      final authorization =
+          await user.authorizationClient.authorizationForScopes(scopes);
+      // If not granted, request interactively
+      final authResult = authorization ??
+          await user.authorizationClient.authorizeScopes(scopes);
+      await _storage.write(key: 'accessToken', value: authResult.accessToken);
+      return authResult.accessToken;
     } on PlatformException catch (e) {
       _logger.e('Platform exception getting access token: $e');
       final diagnostics = PlatformDiagnosticsService.to;
@@ -495,7 +495,8 @@ class AuthService extends GetxService {
         var authorization = await googleAccount.authorizationClient
             .authorizationForScopes(scopes);
         // If not granted, request interactively
-        var authResult = authorization ?? await googleAccount.authorizationClient.authorizeScopes(scopes);
+        var authResult = authorization ??
+            await googleAccount.authorizationClient.authorizeScopes(scopes);
         accessToken = authResult.accessToken;
       } else {
         // For Windows, use the stored access token
@@ -526,17 +527,17 @@ class AuthService extends GetxService {
       rethrow;
     }
 
-  /// Request a server auth code for backend use
-  /// Request a server auth code for backend use
-  // ignore: unused_element
-  Future<String?> requestServerAuthCode(List<String> scopes) async {
-    final user = _lastGoogleAccount;
-    if (user == null) {
-      throw AuthException.notSignedIn();
+    /// Request a server auth code for backend use
+    /// Request a server auth code for backend use
+    // ignore: unused_element
+    Future<String?> requestServerAuthCode(List<String> scopes) async {
+      final user = _lastGoogleAccount;
+      if (user == null) {
+        throw AuthException.notSignedIn();
+      }
+      final serverAuth = await user.authorizationClient.authorizeServer(scopes);
+      return serverAuth?.serverAuthCode;
     }
-    final serverAuth = await user.authorizationClient.authorizeServer(scopes);
-  return serverAuth?.serverAuthCode;
-  }
   }
 
   /// Generate code verifier for PKCE
