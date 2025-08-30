@@ -9,7 +9,7 @@ class ConnectivityService extends GetxService {
   static ConnectivityService get to => Get.find();
   
   final Connectivity _connectivity = Connectivity();
-  late StreamSubscription<ConnectivityResult> _connectivitySubscription;
+  late StreamSubscription<dynamic> _connectivitySubscription;
   
   final _connectionStatus = ConnectionStatus.unknown.obs;
   final _isConnected = false.obs;
@@ -50,7 +50,7 @@ class ConnectivityService extends GetxService {
   /// Start listening to connectivity changes
   void _startListening() {
     _connectivitySubscription = _connectivity.onConnectivityChanged.listen(
-      _updateConnectionStatus,
+      (event) => _updateConnectionStatus(event),
       onError: (error) {
         _connectionStatus.value = ConnectionStatus.unknown;
         _isConnected.value = false;
@@ -59,15 +59,36 @@ class ConnectivityService extends GetxService {
   }
 
   /// Update connection status based on connectivity results
-  void _updateConnectionStatus(ConnectivityResult result) {
+  void _updateConnectionStatus(dynamic result) {
+    // Handle both the older single ConnectivityResult and newer List<ConnectivityResult>
+    if (result is List<ConnectivityResult>) {
+      final hasConnection = result.any((r) =>
+          r == ConnectivityResult.mobile ||
+          r == ConnectivityResult.wifi ||
+          r == ConnectivityResult.ethernet ||
+          r == ConnectivityResult.vpn);
+
+      _isConnected.value = hasConnection;
+      _connectionStatus.value = hasConnection
+          ? ConnectionStatus.connected
+          : ConnectionStatus.disconnected;
+      return;
+    }
+
+    if (result is! ConnectivityResult) {
+      _connectionStatus.value = ConnectionStatus.unknown;
+      _isConnected.value = false;
+      return;
+    }
+
     final hasConnection = result == ConnectivityResult.mobile ||
         result == ConnectivityResult.wifi ||
         result == ConnectivityResult.ethernet ||
         result == ConnectivityResult.vpn;
 
     _isConnected.value = hasConnection;
-    _connectionStatus.value = hasConnection 
-        ? ConnectionStatus.connected 
+    _connectionStatus.value = hasConnection
+        ? ConnectionStatus.connected
         : ConnectionStatus.disconnected;
   }
 
@@ -95,20 +116,35 @@ class ConnectivityService extends GetxService {
   Future<String> getConnectionType() async {
     try {
       final result = await _connectivity.checkConnectivity();
-      switch (result) {
-        case ConnectivityResult.wifi:
-          return 'WiFi';
-        case ConnectivityResult.mobile:
-          return 'Mobile';
-        case ConnectivityResult.ethernet:
-          return 'Ethernet';
-        case ConnectivityResult.vpn:
-          return 'VPN';
-        case ConnectivityResult.none:
-          return 'None';
-        default:
-          return 'Unknown';
+
+      // Handle both List<ConnectivityResult> and single ConnectivityResult
+      if (result is List<ConnectivityResult>) {
+        if (result.any((r) => r == ConnectivityResult.wifi)) return 'WiFi';
+        if (result.any((r) => r == ConnectivityResult.mobile)) return 'Mobile';
+        if (result.any((r) => r == ConnectivityResult.ethernet)) return 'Ethernet';
+        if (result.any((r) => r == ConnectivityResult.vpn)) return 'VPN';
+        if (result.any((r) => r == ConnectivityResult.none)) return 'None';
+        return 'Unknown';
       }
+
+      if (result is ConnectivityResult) {
+        switch (result) {
+          case ConnectivityResult.wifi:
+            return 'WiFi';
+          case ConnectivityResult.mobile:
+            return 'Mobile';
+          case ConnectivityResult.ethernet:
+            return 'Ethernet';
+          case ConnectivityResult.vpn:
+            return 'VPN';
+          case ConnectivityResult.none:
+            return 'None';
+          default:
+            return 'Unknown';
+        }
+      }
+
+      return 'Unknown';
     } catch (e) {
       return 'Unknown';
     }

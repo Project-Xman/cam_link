@@ -1,0 +1,54 @@
+{
+  "project_info": {
+    "project_number": "424570474094",
+    "project_id": "izza-films",
+    "storage_bucket": "izza-films.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:424570474094:android:e1bbd03b83531dff62607f",
+        "android_client_info": {
+          "package_name": "com.example.photoUploader"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "424570474094-q7hnkjg0mqq54mob8q8582jn4s7h0c8o.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.photoUploader",
+            "certificate_hash": "0e7502a874aac0f20ef7c88f2926404787c5a91d"
+          }
+        },
+        {
+          "client_id": "424570474094-66fio54fct71j2ufjl0pqnfdqdp64i60.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD3DGNk1HGmgm6tfmCVZR_rl0PrpcmEM24"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "424570474094-66fio54fct71j2ufjl0pqnfdqdp64i60.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "424570474094-nqlfn4ja62jobdrrg2a1g9lc02oes6d7.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.photoUploader"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:logger/logger.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:network_info_plus/network_info_plus.dart';
+import 'package:path_provider/path_provider.dart';
 
 class FtpServerService extends GetxService {
   static FtpServerService get to => Get.find();
@@ -20,6 +21,7 @@ class FtpServerService extends GetxService {
   final RxString _username = 'camera'.obs;
   final RxString _password = 'upload123'.obs;
   final RxString _ftpDirectory = ''.obs;
+  final RxString _customSaveDirectory = ''.obs;
   final RxBool _autoProcessPhotos = true.obs;
   final RxBool _autoUploadToGDrive = false.obs;
   
@@ -34,6 +36,7 @@ class FtpServerService extends GetxService {
   String get username => _username.value;
   String get password => _password.value;
   String get ftpDirectory => _ftpDirectory.value;
+  String get customSaveDirectory => _customSaveDirectory.value;
   bool get autoProcessPhotos => _autoProcessPhotos.value;
   bool get autoUploadToGDrive => _autoUploadToGDrive.value;
   
@@ -44,6 +47,7 @@ class FtpServerService extends GetxService {
   RxString get usernameRx => _username;
   RxString get passwordRx => _password;
   RxString get ftpDirectoryRx => _ftpDirectory;
+  RxString get customSaveDirectoryRx => _customSaveDirectory;
   RxBool get autoProcessPhotosRx => _autoProcessPhotos;
   RxBool get autoUploadToGDriveRx => _autoUploadToGDrive;
 
@@ -75,6 +79,7 @@ class FtpServerService extends GetxService {
       _serverPort.value = prefs.getInt('ftp_port') ?? 2121;
       _username.value = prefs.getString('ftp_username') ?? 'camera';
       _password.value = prefs.getString('ftp_password') ?? 'upload123';
+      _customSaveDirectory.value = prefs.getString('ftp_custom_directory') ?? '';
       _autoProcessPhotos.value = prefs.getBool('ftp_auto_process') ?? true;
       _autoUploadToGDrive.value = prefs.getBool('ftp_auto_gdrive') ?? false;
     } catch (e) {
@@ -89,6 +94,7 @@ class FtpServerService extends GetxService {
       await prefs.setInt('ftp_port', _serverPort.value);
       await prefs.setString('ftp_username', _username.value);
       await prefs.setString('ftp_password', _password.value);
+      await prefs.setString('ftp_custom_directory', _customSaveDirectory.value);
       await prefs.setBool('ftp_auto_process', _autoProcessPhotos.value);
       await prefs.setBool('ftp_auto_gdrive', _autoUploadToGDrive.value);
     } catch (e) {
@@ -96,26 +102,103 @@ class FtpServerService extends GetxService {
     }
   }
 
-  /// Initialize FTP directory
+  /// Initialize FTP directory with improved configuration support
   Future<void> _initializeFtpDirectory() async {
     try {
-      final directory = Directory('/storage/emulated/0/PhotoUploader/FTP');
-      if (!await directory.exists()) {
-        await directory.create(recursive: true);
+      Directory directory;
+      
+      if (_customSaveDirectory.value.isNotEmpty) {
+        // Use custom directory if specified
+        directory = Directory(_customSaveDirectory.value);
+        if (!await directory.exists()) {
+          await directory.create(recursive: true);
+        }
+        
+        // Validate write permissions
+        if (!await _testDirectoryPermissions(directory.path)) {
+          _logger.w('Custom directory lacks write permissions, falling back to default');
+          _customSaveDirectory.value = '';
+          await _saveSettings();
+          return _initializeFtpDirectory(); // Recursive call with cleared custom path
+        }
+        
+        _ftpDirectory.value = directory.path;
+        _logger.i('Using custom FTP directory: ${directory.path}');
+      } else {
+        // Try to use external storage first
+        try {
+          directory = Directory('/storage/emulated/0/PhotoUploader/FTP');
+          if (!await directory.exists()) {
+            await directory.create(recursive: true);
+          }
+          
+          // Test write permissions
+          if (await _testDirectoryPermissions(directory.path)) {
+            _ftpDirectory.value = directory.path;
+            _logger.i('Using external storage FTP directory: ${directory.path}');
+          } else {
+            throw Exception('No write permissions to external storage');
+          }
+        } catch (e) {
+          _logger.w('External storage not available, using app directory: $e');
+          
+          // Fallback to app documents directory
+          final appDir = await getApplicationDocumentsDirectory();
+          directory = Directory(path.join(appDir.path, 'FTP'));
+          if (!await directory.exists()) {
+            await directory.create(recursive: true);
+          }
+          _ftpDirectory.value = directory.path;
+          _logger.i('Using app documents FTP directory: ${directory.path}');
+        }
       }
-      _ftpDirectory.value = directory.path;
+      
+      // Create subdirectories for organization
+      await _createSubDirectories();
+      
     } catch (e) {
       _logger.e('Error initializing FTP directory: $e');
-      // Fallback to app documents directory
+      // Final fallback to temp directory
       try {
-        final directory = Directory('/data/data/com.example.photo_uploader/files/FTP');
+        final tempDir = await getTemporaryDirectory();
+        final directory = Directory(path.join(tempDir.path, 'FTP'));
         if (!await directory.exists()) {
           await directory.create(recursive: true);
         }
         _ftpDirectory.value = directory.path;
+        _logger.i('Using temporary FTP directory: ${directory.path}');
       } catch (e2) {
-        _logger.e('Error creating fallback FTP directory: $e2');
+        _logger.e('Error creating temporary FTP directory: $e2');
       }
+    }
+  }
+  
+  /// Test directory permissions
+  Future<bool> _testDirectoryPermissions(String directoryPath) async {
+    try {
+      final testFile = File(path.join(directoryPath, '.test_write_${DateTime.now().millisecondsSinceEpoch}'));
+      await testFile.writeAsString('test');
+      final canRead = await testFile.readAsString() == 'test';
+      await testFile.delete();
+      return canRead;
+    } catch (e) {
+      _logger.w('Directory permission test failed for $directoryPath: $e');
+      return false;
+    }
+  }
+  
+  /// Create organized subdirectories
+  Future<void> _createSubDirectories() async {
+    try {
+      final subdirs = ['incoming', 'processed', 'uploaded'];
+      for (final subdir in subdirs) {
+        final dir = Directory(path.join(_ftpDirectory.value, subdir));
+        if (!await dir.exists()) {
+          await dir.create(recursive: true);
+        }
+      }
+    } catch (e) {
+      _logger.w('Error creating subdirectories: $e');
     }
   }
 
@@ -151,7 +234,7 @@ class FtpServerService extends GetxService {
     }
   }
 
-  /// Start FTP server (simplified HTTP-based file receiver)
+  /// Start FTP server (improved HTTP-based file receiver)
   Future<bool> startServer() async {
     if (_isServerRunning.value) return true;
 
@@ -167,11 +250,39 @@ class FtpServerService extends GetxService {
         return false;
       }
 
-      // Create HTTP server for file uploads
-      _server = await HttpServer.bind(InternetAddress.anyIPv4, _serverPort.value);
+      // Validate directory exists and is writable
+      if (_ftpDirectory.value.isEmpty || !await Directory(_ftpDirectory.value).exists()) {
+        await _initializeFtpDirectory();
+      }
+      
+      if (!await _testDirectoryPermissions(_ftpDirectory.value)) {
+        Get.snackbar(
+          'Directory Error',
+          'FTP directory is not writable. Please check permissions.',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Get.theme.colorScheme.errorContainer,
+        );
+        return false;
+      }
+
+      // Create HTTP server for file uploads with better configuration
+      _server = await HttpServer.bind(
+        InternetAddress.anyIPv4, 
+        _serverPort.value,
+        backlog: 10,
+      );
+      
+      // Configure server settings
+      _server!.autoCompress = true;
+      _server!.defaultResponseHeaders.set('Server', 'PhotoUploader-FTP/1.0');
+      _server!.defaultResponseHeaders.set('Access-Control-Allow-Origin', '*');
+      _server!.defaultResponseHeaders.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+      _server!.defaultResponseHeaders.set('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Filename');
       
       _server!.listen((HttpRequest request) async {
         await _handleRequest(request);
+      }, onError: (error) {
+        _logger.e('FTP Server error: $error');
       });
 
       _isServerRunning.value = true;
@@ -179,13 +290,31 @@ class FtpServerService extends GetxService {
 
       Get.snackbar(
         'FTP Server Started',
-        'Server running on ${_serverIp.value}:${_serverPort.value}',
+        'Server running on ${_serverIp.value}:${_serverPort.value}\nSave directory: ${_ftpDirectory.value}',
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Get.theme.colorScheme.primaryContainer,
+        duration: const Duration(seconds: 5),
       );
 
-      _logger.i('FTP server started on port ${_serverPort.value}');
+      _logger.i('FTP server started on port ${_serverPort.value}, directory: ${_ftpDirectory.value}');
       return true;
+    } on SocketException catch (e) {
+      _logger.e('Socket error starting FTP server: $e');
+      
+      String errorMessage = 'Failed to start FTP server';
+      if (e.osError?.errorCode == 98 || e.message.contains('Address already in use')) {
+        errorMessage = 'Port ${_serverPort.value} is already in use. Please choose a different port.';
+      } else if (e.osError?.errorCode == 13) {
+        errorMessage = 'Permission denied. Port ${_serverPort.value} may require elevated privileges.';
+      }
+      
+      Get.snackbar(
+        'Server Error',
+        errorMessage,
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Get.theme.colorScheme.errorContainer,
+      );
+      return false;
     } catch (e) {
       _logger.e('Error starting FTP server: $e');
       Get.snackbar(
@@ -221,93 +350,398 @@ class FtpServerService extends GetxService {
     }
   }
 
-  /// Handle HTTP requests (simplified FTP-like functionality)
+  /// Handle HTTP requests (improved FTP-like functionality)
   Future<void> _handleRequest(HttpRequest request) async {
     try {
+      // Handle CORS preflight requests
+      if (request.method == 'OPTIONS') {
+        request.response.statusCode = HttpStatus.ok;
+        await request.response.close();
+        return;
+      }
+      
+      // Add CORS headers to all responses
+      request.response.headers.set('Access-Control-Allow-Origin', '*');
+      request.response.headers.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+      request.response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Filename');
+      
       if (request.method == 'POST' && request.uri.path == '/upload') {
         await _handleFileUpload(request);
       } else if (request.method == 'GET' && request.uri.path == '/') {
         await _handleStatusRequest(request);
+      } else if (request.method == 'GET' && request.uri.path == '/files') {
+        await _handleFileListRequest(request);
+      } else if (request.method == 'POST' && request.uri.path == '/config') {
+        await _handleConfigUpdate(request);
       } else {
         request.response.statusCode = HttpStatus.notFound;
-        request.response.write('Not Found');
+        request.response.headers.contentType = ContentType.json;
+        request.response.write(json.encode({
+          'error': 'Not Found',
+          'available_endpoints': ['/upload', '/', '/files', '/config']
+        }));
         await request.response.close();
       }
     } catch (e) {
       _logger.e('Error handling request: $e');
-      request.response.statusCode = HttpStatus.internalServerError;
-      request.response.write('Internal Server Error');
-      await request.response.close();
+      try {
+        request.response.statusCode = HttpStatus.internalServerError;
+        request.response.headers.contentType = ContentType.json;
+        request.response.write(json.encode({
+          'error': 'Internal Server Error',
+          'message': e.toString()
+        }));
+        await request.response.close();
+      } catch (closeError) {
+        _logger.e('Error closing response: $closeError');
+      }
     }
   }
 
-  /// Handle file upload
+  /// Handle file upload with improved validation and processing
   Future<void> _handleFileUpload(HttpRequest request) async {
     try {
       // Basic authentication check
       final auth = request.headers.value('authorization');
       if (!_isValidAuth(auth)) {
         request.response.statusCode = HttpStatus.unauthorized;
-        request.response.headers.set('WWW-Authenticate', 'Basic realm="FTP Server"');
-        request.response.write('Unauthorized');
+        request.response.headers.set('WWW-Authenticate', 'Basic realm="PhotoUploader FTP Server"');
+        request.response.headers.contentType = ContentType.json;
+        request.response.write(json.encode({
+          'error': 'Unauthorized',
+          'message': 'Valid credentials required'
+        }));
         await request.response.close();
         return;
       }
 
       // Get filename from headers or generate one
-      final filename = request.headers.value('x-filename') ?? 
-                     'photo_${DateTime.now().millisecondsSinceEpoch}.jpg';
+      String filename = request.headers.value('x-filename') ?? 
+                       request.uri.queryParameters['filename'] ??
+                       'photo_${DateTime.now().millisecondsSinceEpoch}.jpg';
       
-      final filePath = path.join(_ftpDirectory.value, filename);
-      final file = File(filePath);
+      // Sanitize filename
+      filename = _sanitizeFilename(filename);
+      
+      // Determine save location within FTP directory
+      final saveDir = path.join(_ftpDirectory.value, 'incoming');
+      final filePath = path.join(saveDir, filename);
+      
+      // Ensure directory exists
+      final directory = Directory(saveDir);
+      if (!await directory.exists()) {
+        await directory.create(recursive: true);
+      }
+      
+      // Check available space (basic check)
+      File file = File(filePath);
+      if (await file.exists()) {
+        // Generate unique filename
+        final timestamp = DateTime.now().millisecondsSinceEpoch;
+        final ext = path.extension(filename);
+        final nameWithoutExt = path.basenameWithoutExtension(filename);
+        filename = '${nameWithoutExt}_$timestamp$ext';
+        final newFilePath = path.join(saveDir, filename);
+        file = File(newFilePath);
+      }
 
-      // Write uploaded data to file
+      // Write uploaded data to file with progress tracking
       final sink = file.openWrite();
-      await sink.addStream(request);
+      int bytesReceived = 0;
+      final contentLength = request.contentLength;
+      
+      await for (final chunk in request) {
+        sink.add(chunk);
+        bytesReceived += chunk.length;
+        
+        // Log progress for large files
+        if (contentLength > 0 && bytesReceived % (1024 * 1024) == 0) {
+          final progress = (bytesReceived / contentLength * 100).toStringAsFixed(1);
+          _logger.i('Upload progress: $progress% ($bytesReceived/$contentLength bytes)');
+        }
+      }
+      
       await sink.close();
-
-      _logger.i('File uploaded: $filename');
+      
+      final fileSize = await file.length();
+      _logger.i('File uploaded: $filename (${fileSize} bytes)');
 
       // Process the uploaded photo if auto-processing is enabled
       if (_autoProcessPhotos.value) {
-        await _processUploadedPhoto(filePath);
+        await _processUploadedPhoto(file.path);
       }
 
       request.response.statusCode = HttpStatus.ok;
-      request.response.write('File uploaded successfully');
+      request.response.headers.contentType = ContentType.json;
+      request.response.write(json.encode({
+        'success': true,
+        'message': 'File uploaded successfully',
+        'filename': filename,
+        'size': fileSize,
+        'path': file.path,
+        'auto_processed': _autoProcessPhotos.value
+      }));
       await request.response.close();
 
       Get.snackbar(
         'File Received',
-        'Photo uploaded via FTP: $filename',
+        'Photo uploaded: $filename (${_formatFileSize(fileSize)})',
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Get.theme.colorScheme.primaryContainer,
       );
     } catch (e) {
       _logger.e('Error handling file upload: $e');
       request.response.statusCode = HttpStatus.internalServerError;
-      request.response.write('Upload failed');
+      request.response.headers.contentType = ContentType.json;
+      request.response.write(json.encode({
+        'error': 'Upload failed',
+        'message': e.toString()
+      }));
       await request.response.close();
     }
   }
+  
+  /// Sanitize filename to prevent directory traversal and invalid characters
+  String _sanitizeFilename(String filename) {
+    // Remove path separators and invalid characters
+    String sanitized = filename.replaceAll(RegExp(r'[<>:"/\|?*]'), '_');
+    sanitized = sanitized.replaceAll('..', '_');
+    
+    // Ensure it's not empty and has reasonable length
+    if (sanitized.isEmpty || sanitized == '.') {
+      sanitized = 'file_${DateTime.now().millisecondsSinceEpoch}';
+    }
+    
+    if (sanitized.length > 255) {
+      final ext = path.extension(sanitized);
+      sanitized = sanitized.substring(0, 250 - ext.length) + ext;
+    }
+    
+    return sanitized;
+  }
+  
+  /// Format file size for display
+  String _formatFileSize(int bytes) {
+    if (bytes < 1024) return '${bytes}B';
+    if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)}KB';
+    if (bytes < 1024 * 1024 * 1024) return '${(bytes / (1024 * 1024)).toStringAsFixed(1)}MB';
+    return '${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(1)}GB';
+  }
 
-  /// Handle status request
+  /// Handle status request with detailed information
   Future<void> _handleStatusRequest(HttpRequest request) async {
     try {
+      final stats = await _getServerStats();
       final status = {
         'server': 'PhotoUploader FTP Server',
+        'version': '1.0',
         'status': 'running',
+        'uptime': DateTime.now().difference(_server?.address != null ? DateTime.now() : DateTime.now()).inSeconds,
         'directory': _ftpDirectory.value,
+        'custom_directory': _customSaveDirectory.value,
         'auto_process': _autoProcessPhotos.value,
         'auto_gdrive': _autoUploadToGDrive.value,
+        'server_ip': _serverIp.value,
+        'server_port': _serverPort.value,
+        'authentication': {
+          'username': _username.value,
+          'password_set': _password.value.isNotEmpty
+        },
+        'statistics': stats,
+        'endpoints': {
+          'upload': 'POST /upload',
+          'status': 'GET /',
+          'files': 'GET /files',
+          'config': 'POST /config'
+        }
       };
 
       request.response.headers.contentType = ContentType.json;
-      request.response.write(status.toString());
+      request.response.write(json.encode(status));
       await request.response.close();
     } catch (e) {
       _logger.e('Error handling status request: $e');
+      request.response.statusCode = HttpStatus.internalServerError;
+      request.response.write(json.encode({
+        'error': 'Status request failed',
+        'message': e.toString()
+      }));
+      await request.response.close();
     }
+  }
+  
+  /// Handle file list request
+  Future<void> _handleFileListRequest(HttpRequest request) async {
+    try {
+      // Basic authentication check
+      final auth = request.headers.value('authorization');
+      if (!_isValidAuth(auth)) {
+        request.response.statusCode = HttpStatus.unauthorized;
+        request.response.headers.set('WWW-Authenticate', 'Basic realm="PhotoUploader FTP Server"');
+        request.response.headers.contentType = ContentType.json;
+        request.response.write(json.encode({'error': 'Unauthorized'}));
+        await request.response.close();
+        return;
+      }
+      
+      final files = await _listFiles();
+      
+      request.response.headers.contentType = ContentType.json;
+      request.response.write(json.encode({
+        'files': files,
+        'directory': _ftpDirectory.value,
+        'total_count': files.length
+      }));
+      await request.response.close();
+    } catch (e) {
+      _logger.e('Error handling file list request: $e');
+      request.response.statusCode = HttpStatus.internalServerError;
+      request.response.write(json.encode({
+        'error': 'File list failed',
+        'message': e.toString()
+      }));
+      await request.response.close();
+    }
+  }
+  
+  /// Handle configuration update request
+  Future<void> _handleConfigUpdate(HttpRequest request) async {
+    try {
+      // Basic authentication check
+      final auth = request.headers.value('authorization');
+      if (!_isValidAuth(auth)) {
+        request.response.statusCode = HttpStatus.unauthorized;
+        request.response.headers.set('WWW-Authenticate', 'Basic realm="PhotoUploader FTP Server"');
+        request.response.headers.contentType = ContentType.json;
+        request.response.write(json.encode({'error': 'Unauthorized'}));
+        await request.response.close();
+        return;
+      }
+      
+      // Read request body
+      final body = await utf8.decoder.bind(request).join();
+      final config = json.decode(body) as Map<String, dynamic>;
+      
+      // Update configuration
+      if (config.containsKey('auto_process')) {
+        _autoProcessPhotos.value = config['auto_process'] as bool;
+      }
+      if (config.containsKey('auto_gdrive')) {
+        _autoUploadToGDrive.value = config['auto_gdrive'] as bool;
+      }
+      if (config.containsKey('custom_directory')) {
+        final newDir = config['custom_directory'] as String;
+        await setCustomSaveDirectory(newDir);
+      }
+      
+      await _saveSettings();
+      
+      request.response.headers.contentType = ContentType.json;
+      request.response.write(json.encode({
+        'success': true,
+        'message': 'Configuration updated successfully',
+        'config': {
+          'auto_process': _autoProcessPhotos.value,
+          'auto_gdrive': _autoUploadToGDrive.value,
+          'custom_directory': _customSaveDirectory.value,
+          'directory': _ftpDirectory.value
+        }
+      }));
+      await request.response.close();
+    } catch (e) {
+      _logger.e('Error handling config update: $e');
+      request.response.statusCode = HttpStatus.badRequest;
+      request.response.headers.contentType = ContentType.json;
+      request.response.write(json.encode({
+        'error': 'Config update failed',
+        'message': e.toString()
+      }));
+      await request.response.close();
+    }
+  }
+  
+  /// Get server statistics
+  Future<Map<String, dynamic>> _getServerStats() async {
+    try {
+      final dir = Directory(_ftpDirectory.value);
+      int fileCount = 0;
+      int totalSize = 0;
+      
+      if (await dir.exists()) {
+        await for (final entity in dir.list(recursive: true)) {
+          if (entity is File) {
+            fileCount++;
+            try {
+              totalSize += await entity.length();
+            } catch (e) {
+              // Ignore files we can't read
+            }
+          }
+        }
+      }
+      
+      return {
+        'total_files': fileCount,
+        'total_size': totalSize,
+        'total_size_formatted': _formatFileSize(totalSize),
+        'directory_exists': await dir.exists(),
+        'directory_writable': await _testDirectoryPermissions(_ftpDirectory.value)
+      };
+    } catch (e) {
+      _logger.e('Error getting server stats: $e');
+      return {
+        'error': e.toString()
+      };
+    }
+  }
+  
+  /// List files in FTP directory
+  Future<List<Map<String, dynamic>>> _listFiles() async {
+    final files = <Map<String, dynamic>>[];
+    
+    try {
+      final dir = Directory(_ftpDirectory.value);
+      if (!await dir.exists()) {
+        return files;
+      }
+      
+      await for (final entity in dir.list(recursive: false)) {
+        if (entity is File) {
+          final stat = await entity.stat();
+          files.add({
+            'name': path.basename(entity.path),
+            'path': entity.path,
+            'size': stat.size,
+            'size_formatted': _formatFileSize(stat.size),
+            'modified': stat.modified.toIso8601String(),
+            'type': path.extension(entity.path).toLowerCase()
+          });
+        } else if (entity is Directory) {
+          files.add({
+            'name': path.basename(entity.path),
+            'path': entity.path,
+            'type': 'directory',
+            'size': 0,
+            'size_formatted': '-'
+          });
+        }
+      }
+      
+      // Sort by modification time, newest first
+      files.sort((a, b) {
+        if (a['type'] == 'directory' && b['type'] != 'directory') return -1;
+        if (a['type'] != 'directory' && b['type'] == 'directory') return 1;
+        if (a['modified'] != null && b['modified'] != null) {
+          return DateTime.parse(b['modified']).compareTo(DateTime.parse(a['modified']));
+        }
+        return a['name'].compareTo(b['name']);
+      });
+      
+    } catch (e) {
+      _logger.e('Error listing files: $e');
+    }
+    
+    return files;
   }
 
   /// Validate basic authentication
@@ -433,19 +867,82 @@ Upload URL: http://${_serverIp.value}:${_serverPort.value}/upload
     }
   }
 
-  /// Get uploaded files list
-  Future<List<FileSystemEntity>> getUploadedFiles() async {
+  /// Set custom save directory for FTP uploads
+  Future<bool> setCustomSaveDirectory(String directoryPath) async {
     try {
-      final directory = Directory(_ftpDirectory.value);
-      if (await directory.exists()) {
-        return directory.listSync()
-          .whereType<File>()
-          .toList();
+      if (directoryPath.isEmpty) {
+        _customSaveDirectory.value = '';
+        await _saveSettings();
+        await _initializeFtpDirectory();
+        
+        Get.snackbar(
+          'Directory Reset',
+          'Using default FTP directory',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Get.theme.colorScheme.primaryContainer,
+        );
+        return true;
       }
-      return [];
+      
+      // Validate directory
+      final dir = Directory(directoryPath);
+      if (!await dir.exists()) {
+        await dir.create(recursive: true);
+      }
+      
+      // Test write permissions
+      final testFile = File(path.join(directoryPath, '.test_write'));
+      await testFile.writeAsString('test');
+      await testFile.delete();
+      
+      _customSaveDirectory.value = directoryPath;
+      await _saveSettings();
+      await _initializeFtpDirectory();
+      
+      Get.snackbar(
+        'Directory Set',
+        'Custom FTP directory: $directoryPath',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Get.theme.colorScheme.primaryContainer,
+      );
+      
+      return true;
     } catch (e) {
-      _logger.e('Error getting uploaded files: $e');
-      return [];
+      _logger.e('Error setting custom directory: $e');
+      Get.snackbar(
+        'Directory Error',
+        'Cannot use directory: ${e.toString()}',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Get.theme.colorScheme.errorContainer,
+      );
+      return false;
     }
+  }
+  
+  /// Get available storage directories
+  Future<List<String>> getAvailableDirectories() async {
+    final directories = <String>[];
+    
+    try {
+      // External storage directories
+      directories.add('/storage/emulated/0/PhotoUploader');
+      directories.add('/storage/emulated/0/DCIM/PhotoUploader');
+      directories.add('/storage/emulated/0/Pictures/PhotoUploader');
+      directories.add('/storage/emulated/0/Download/PhotoUploader');
+      
+      // App-specific directories
+      final appDir = await getApplicationDocumentsDirectory();
+      directories.add(path.join(appDir.path, 'FTP'));
+      
+      final externalDir = await getExternalStorageDirectory();
+      if (externalDir != null) {
+        directories.add(path.join(externalDir.path, 'FTP'));
+      }
+      
+    } catch (e) {
+      _logger.e('Error getting available directories: $e');
+    }
+    
+    return directories;
   }
 }
